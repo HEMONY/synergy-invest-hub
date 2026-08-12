@@ -121,7 +121,7 @@ function OpportunitiesPage() {
                 min={100000}
                 max={1000000}
                 step={50000}
-                onValueChange={([v]) => setMaxFunding(v)}
+                onValueChange={(v) => setMaxFunding(v[0] ?? 0)}
               />
             </div>
 
@@ -135,7 +135,7 @@ function OpportunitiesPage() {
                 min={1}
                 max={12}
                 step={1}
-                onValueChange={([v]) => setMaxDuration(v)}
+                onValueChange={(v) => setMaxDuration(v[0] ?? 1)}
               />
             </div>
           </div>
