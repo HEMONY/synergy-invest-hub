@@ -45,7 +45,7 @@ export function Footer() {
             <li dir="ltr" className="text-end">
               +249 96 780 7618
             </li>
-            <li>الخرطوم، السودان</li>
+            <li>الخرطوم-امدرمان-بحري، السودان</li>
           </ul>
         </div>
       </div>
