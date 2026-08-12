@@ -44,6 +44,7 @@ export function Footer() {
             <li>support@synergy.com</li>
             <li dir="ltr" className="text-end">
               +249 96 780 7618
+              <br />
               +249 11 930 2923
             </li>
             <li>الخرطوم-امدرمان-بحري، السودان</li>
