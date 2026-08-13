@@ -39,9 +39,7 @@ function Index() {
       <section className="relative overflow-hidden bg-navy-gradient">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 lg:grid-cols-2 lg:px-8 lg:py-24">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-xs font-semibold text-gold">
-              <CheckCircle2 className="size-3.5" /> وساطة استثمارية بإشراف كامل
-            </span>
+            
             <h1 className="mt-6 text-4xl leading-[1.25] font-extrabold text-white sm:text-5xl">
               من عقار متضرر
               <br />
