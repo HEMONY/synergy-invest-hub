@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatSAR } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/account")({
+export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
     meta: [
       { title: "حسابي | Synergy" },

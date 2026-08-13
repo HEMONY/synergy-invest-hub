@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatSAR, opportunities, projects, projectStages } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/requests")({
+export const Route = createFileRoute("/_authenticated/requests")({
   head: () => ({
     meta: [
       { title: "طلباتي ومشاريعي | Synergy" },

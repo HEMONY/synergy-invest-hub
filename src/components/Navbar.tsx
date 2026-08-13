@@ -1,11 +1,12 @@
-import { Link } from "@tanstack/react-router";
-import { Bell, Briefcase, Home, LineChart, Menu, Moon, Sun, User, X } from "lucide-react";
-import { useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Bell, Briefcase, Home, LineChart, LogOut, Menu, Moon, Sun, User, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/lib/theme";
-import { notifications } from "@/lib/mock-data";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const links = [
   { to: "/", label: "الرئيسية", icon: Home },
@@ -17,8 +18,34 @@ const links = [
 
 export function Navbar() {
   const { theme, toggle } = useTheme();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const unread = notifications.filter((n) => n.unread).length;
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    if (!user) {
+      setUnread(0);
+      return;
+    }
+    let active = true;
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("is_read", false)
+      .then(({ count }) => {
+        if (active) setUnread(count ?? 0);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const handleSignOut = async () => {
+    setOpen(false);
+    await signOut();
+    navigate({ to: "/", replace: true });
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/85 backdrop-blur-xl">
@@ -53,9 +80,26 @@ export function Navbar() {
           <Button variant="ghost" size="icon" aria-label="تبديل الوضع" onClick={toggle}>
             {theme === "dark" ? <Sun className="text-gold" /> : <Moon className="text-navy" />}
           </Button>
-          <Button asChild variant="gold" size="sm" className="hidden sm:inline-flex">
-            <Link to="/auth">إنشاء حساب</Link>
-          </Button>
+          {user ? (
+            <>
+              <Button asChild variant="outlineGold" size="sm" className="hidden sm:inline-flex">
+                <Link to="/account">حسابي</Link>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="تسجيل الخروج"
+                className="hidden sm:inline-flex"
+                onClick={handleSignOut}
+              >
+                <LogOut className="size-4" />
+              </Button>
+            </>
+          ) : (
+            <Button asChild variant="gold" size="sm" className="hidden sm:inline-flex">
+              <Link to="/auth">إنشاء حساب</Link>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -85,11 +129,18 @@ export function Navbar() {
             </li>
           ))}
           <li className="mt-2">
-            <Button asChild variant="gold" className="w-full">
-              <Link to="/auth" onClick={() => setOpen(false)}>
-                إنشاء حساب
-              </Link>
-            </Button>
+            {user ? (
+              <Button variant="outlineGold" className="w-full gap-2" onClick={handleSignOut}>
+                <LogOut className="size-4" />
+                تسجيل الخروج
+              </Button>
+            ) : (
+              <Button asChild variant="gold" className="w-full">
+                <Link to="/auth" onClick={() => setOpen(false)}>
+                  إنشاء حساب
+                </Link>
+              </Button>
+            )}
           </li>
         </ul>
       )}
