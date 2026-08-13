@@ -14,16 +14,162 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          is_read: boolean
+          kind: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          kind?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          kind?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          account_type: string
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          verification_status: string
+        }
+        Insert: {
+          account_type?: string
+          created_at?: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string
+          verification_status?: string
+        }
+        Update: {
+          account_type?: string
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          verification_status?: string
+        }
+        Relationships: []
+      }
+      property_requests: {
+        Row: {
+          city: string
+          code: string
+          created_at: string
+          damage_description: string
+          district: string
+          duration_months: number
+          expected_return: number
+          funding_needed: number
+          id: string
+          images: string[]
+          owner_id: string
+          progress: number
+          property_type: string
+          rehab_cost: number
+          stage_index: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          city: string
+          code?: string
+          created_at?: string
+          damage_description?: string
+          district: string
+          duration_months?: number
+          expected_return?: number
+          funding_needed?: number
+          id?: string
+          images?: string[]
+          owner_id: string
+          progress?: number
+          property_type: string
+          rehab_cost?: number
+          stage_index?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string
+          code?: string
+          created_at?: string
+          damage_description?: string
+          district?: string
+          duration_months?: number
+          expected_return?: number
+          funding_needed?: number
+          id?: string
+          images?: string[]
+          owner_id?: string
+          progress?: number
+          property_type?: string
+          rehab_cost?: number
+          stage_index?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "supervisor" | "owner" | "investor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +296,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "supervisor", "owner", "investor"],
+    },
   },
 } as const
