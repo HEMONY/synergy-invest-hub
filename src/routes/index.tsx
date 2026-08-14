@@ -5,7 +5,9 @@ import heroImage from "@/assets/hero-property.jpg";
 import { PageHeader, SiteLayout } from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { formatSAR, opportunities, projects } from "@/lib/mock-data";
+import { useQuery } from "@tanstack/react-query";
+import { conditionLabels, fetchOpportunities, formatSAR } from "@/lib/db";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
