@@ -1,12 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Check } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { Check, Plus } from "lucide-react";
 
 import { PageHeader, SiteLayout } from "@/components/SiteLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatSAR, opportunities, projects, projectStages } from "@/lib/mock-data";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  conditionLabels,
+  fetchMyInterests,
+  fetchMyRequests,
+  formatSAR,
+  projectStages,
+  statusLabels,
+  timeAgo,
+} from "@/lib/db";
 
 export const Route = createFileRoute("/_authenticated/requests")({
   head: () => ({
@@ -21,6 +31,8 @@ export const Route = createFileRoute("/_authenticated/requests")({
         property: "og:description",
         content: "متابعة مراحل المشروع من الرفع حتى الاكتمال في منصة Synergy.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: RequestsPage,
@@ -35,9 +47,7 @@ function Stepper({ current }: { current: number }) {
           <li
             key={stage}
             className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${
-              done
-                ? "border-gold/50 bg-gold/15 text-gold"
-                : "border-border text-muted-foreground"
+              done ? "border-gold/50 bg-gold/15 text-gold" : "border-border text-muted-foreground"
             }`}
           >
             {done && <Check className="size-3" />}
@@ -50,6 +60,25 @@ function Stepper({ current }: { current: number }) {
 }
 
 function RequestsPage() {
+  const { user } = useAuth();
+  const userId = user?.id ?? "";
+
+  const { data: requests = [], isLoading } = useQuery({
+    queryKey: ["my-requests", userId],
+    queryFn: () => fetchMyRequests(userId),
+    enabled: !!userId,
+  });
+
+  const { data: interests = [] } = useQuery({
+    queryKey: ["my-interests", userId],
+    queryFn: () => fetchMyInterests(userId),
+    enabled: !!userId,
+  });
+
+  const projects = requests.filter((r) =>
+    ["matched", "in_progress", "completed"].includes(r.status),
+  );
+
   return (
     <SiteLayout>
       <PageHeader
@@ -61,55 +90,140 @@ function RequestsPage() {
         <Tabs defaultValue="requests">
           <TabsList>
             <TabsTrigger value="requests">طلباتي</TabsTrigger>
+            <TabsTrigger value="investments">تمويلاتي</TabsTrigger>
             <TabsTrigger value="projects">مشاريعي</TabsTrigger>
           </TabsList>
 
           <TabsContent value="requests" className="mt-6 space-y-4">
             <div className="flex justify-end">
-              <Button variant="gold">أضف عقارك</Button>
+              <Button asChild variant="gold" className="gap-2">
+                <Link to="/new-request">
+                  <Plus className="size-4" />
+                  أضف عقارك
+                </Link>
+              </Button>
             </div>
-            {opportunities.slice(0, 4).map((o) => (
+
+            {isLoading && (
+              <div className="card-surface p-10 text-center text-sm text-muted-foreground">
+                جارٍ التحميل...
+              </div>
+            )}
+
+            {!isLoading && requests.length === 0 && (
+              <div className="card-surface p-10 text-center text-sm text-muted-foreground">
+                لم ترفع أي عقار بعد — ابدأ بإضافة عقار متضرر أو غير متضرر.
+              </div>
+            )}
+
+            {requests.map((o) => (
               <article key={o.id} className="card-surface p-6">
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
                   <div className="min-w-0">
                     <h3 className="truncate text-base font-bold">
-                      {o.type} — {o.city} / {o.district}
+                      {o.title || `${o.property_type} — ${o.city} / ${o.district}`}
                     </h3>
-                    <p className="mt-1 text-xs text-muted-foreground">رقم الطلب {o.code}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      رقم الطلب {o.code} · {conditionLabels[o.condition] ?? o.condition} ·{" "}
+                      {timeAgo(o.created_at)}
+                    </p>
                   </div>
-                  <Badge className="shrink-0 bg-gold/15 text-gold">{o.status}</Badge>
+                  <Badge className="shrink-0 bg-gold/15 text-gold">
+                    {statusLabels[o.status] ?? o.status}
+                  </Badge>
                 </div>
-                <p className="mt-3 text-sm leading-7 text-muted-foreground">{o.damage}</p>
-                <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+                <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                  {o.damage_description}
+                </p>
+                <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-4">
                   <div>
-                    <dt className="text-xs text-muted-foreground">تكلفة التأهيل</dt>
-                    <dd className="font-bold">{formatSAR(o.rehabCost)}</dd>
+                    <dt className="text-xs text-muted-foreground">تكلفة التنفيذ</dt>
+                    <dd className="font-bold">{formatSAR(Number(o.rehab_cost))}</dd>
                   </div>
                   <div>
                     <dt className="text-xs text-muted-foreground">التمويل المطلوب</dt>
-                    <dd className="font-bold text-gold">{formatSAR(o.fundingNeeded)}</dd>
+                    <dd className="font-bold text-gold">{formatSAR(Number(o.funding_needed))}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">العائد المتوقع</dt>
+                    <dd className="font-bold text-gold">{o.expected_return}%</dd>
                   </div>
                   <div>
                     <dt className="text-xs text-muted-foreground">مدة التنفيذ</dt>
-                    <dd className="font-bold">{o.durationMonths} أشهر</dd>
+                    <dd className="font-bold">{o.duration_months} أشهر</dd>
                   </div>
                 </dl>
               </article>
             ))}
           </TabsContent>
 
+          <TabsContent value="investments" className="mt-6 space-y-4">
+            {interests.length === 0 && (
+              <div className="card-surface p-10 text-center text-sm text-muted-foreground">
+                لم ترسل أي رغبة تمويل بعد — تصفح{" "}
+                <Link to="/opportunities" className="font-bold text-gold">
+                  الفرص المتاحة
+                </Link>
+                .
+              </div>
+            )}
+            {interests.map((i) => {
+              const r = i.property_requests;
+              return (
+                <article key={i.id} className="card-surface p-6">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-base font-bold">
+                        {r?.title || `${r?.property_type} — ${r?.city} / ${r?.district}`}
+                      </h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {r?.code} · أُرسلت {timeAgo(i.created_at)}
+                      </p>
+                    </div>
+                    <Badge className="shrink-0 bg-gold/15 text-gold">
+                      {i.status === "pending" ? "قيد المراجعة" : statusLabels[i.status] ?? i.status}
+                    </Badge>
+                  </div>
+                  <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+                    <div>
+                      <dt className="text-xs text-muted-foreground">مبلغ التمويل</dt>
+                      <dd className="font-bold text-gold">{formatSAR(Number(i.amount))}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground">العائد المتوقع</dt>
+                      <dd className="font-bold text-gold">{r?.expected_return ?? 0}%</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground">أرباح تقديرية</dt>
+                      <dd className="font-bold">
+                        {formatSAR((Number(i.amount) * Number(r?.expected_return ?? 0)) / 100)}
+                      </dd>
+                    </div>
+                  </dl>
+                </article>
+              );
+            })}
+          </TabsContent>
+
           <TabsContent value="projects" className="mt-6 space-y-4">
+            {projects.length === 0 && (
+              <div className="card-surface p-10 text-center text-sm text-muted-foreground">
+                لا توجد مشاريع قيد التنفيذ حالياً.
+              </div>
+            )}
             {projects.map((p) => (
               <article key={p.id} className="card-surface p-6">
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
                   <div className="min-w-0">
-                    <h3 className="truncate text-base font-bold">{p.title}</h3>
+                    <h3 className="truncate text-base font-bold">
+                      {p.title || `${p.property_type} — ${p.city} / ${p.district}`}
+                    </h3>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {p.code} · المشرف {p.supervisor} · آخر تحديث {p.updatedAt}
+                      {p.code} · آخر تحديث {timeAgo(p.updated_at)}
                     </p>
                   </div>
                   <span className="shrink-0 text-sm font-bold text-gold">
-                    {formatSAR(p.funding)}
+                    {formatSAR(Number(p.funding_needed))}
                   </span>
                 </div>
 
@@ -123,7 +237,7 @@ function RequestsPage() {
 
                 <div className="mt-5">
                   <p className="mb-2 text-xs font-semibold text-muted-foreground">حالة المشروع</p>
-                  <Stepper current={p.stageIndex} />
+                  <Stepper current={p.stage_index} />
                 </div>
               </article>
             ))}
