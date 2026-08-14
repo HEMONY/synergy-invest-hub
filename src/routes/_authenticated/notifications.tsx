@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Building2, FileCheck2, Wallet } from "lucide-react";
 import { useState } from "react";
 
 import { PageHeader, SiteLayout } from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
-import { notifications, type Notification } from "@/lib/mock-data";
+import { useAuth } from "@/hooks/useAuth";
+import { fetchNotifications, markAllRead, notificationKinds, timeAgo } from "@/lib/db";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
   head: () => ({
@@ -16,30 +18,49 @@ export const Route = createFileRoute("/_authenticated/notifications")({
       },
       { property: "og:title", content: "الإشعارات | Synergy" },
       { property: "og:description", content: "كل تحديثات حسابك ومشاريعك في منصة Synergy." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: NotificationsPage,
 });
 
-const icons: Record<Notification["kind"], typeof Bell> = {
-  طلب: FileCheck2,
-  مشروع: Building2,
-  توثيق: Bell,
-  مالي: Wallet,
+const icons: Record<string, typeof Bell> = {
+  request: FileCheck2,
+  project: Building2,
+  verification: Bell,
+  finance: Wallet,
 };
 
 const filters = ["الكل", "طلب", "مشروع", "توثيق", "مالي"] as const;
 
 function NotificationsPage() {
+  const { user } = useAuth();
+  const userId = user?.id ?? "";
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<(typeof filters)[number]>("الكل");
-  const list = notifications.filter((n) => filter === "الكل" || n.kind === filter);
+
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["notifications", userId],
+    queryFn: () => fetchNotifications(userId),
+    enabled: !!userId,
+  });
+
+  const readAll = useMutation({
+    mutationFn: () => markAllRead(userId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+
+  const list = rows.filter(
+    (n) => filter === "الكل" || (notificationKinds[n.kind] ?? n.kind) === filter,
+  );
 
   return (
     <SiteLayout>
       <PageHeader title="الإشعارات" subtitle="تحديثات الطلب وتحديثات المشروع أولاً بأول." />
 
       <div className="mx-auto max-w-4xl px-4 py-10 lg:px-8">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {filters.map((f) => (
             <Button
               key={f}
@@ -50,11 +71,32 @@ function NotificationsPage() {
               {f}
             </Button>
           ))}
+          <Button
+            size="sm"
+            variant="outlineGold"
+            className="ms-auto"
+            disabled={readAll.isPending || rows.every((n) => n.is_read)}
+            onClick={() => readAll.mutate()}
+          >
+            تعليم الكل كمقروء
+          </Button>
         </div>
+
+        {isLoading && (
+          <div className="card-surface mt-6 p-10 text-center text-sm text-muted-foreground">
+            جارٍ التحميل...
+          </div>
+        )}
+
+        {!isLoading && list.length === 0 && (
+          <div className="card-surface mt-6 p-10 text-center text-sm text-muted-foreground">
+            لا توجد إشعارات حالياً.
+          </div>
+        )}
 
         <ul className="mt-6 space-y-3">
           {list.map((n) => {
-            const Icon = icons[n.kind];
+            const Icon = icons[n.kind] ?? Bell;
             return (
               <li key={n.id} className="card-surface flex items-start gap-4 p-5">
                 <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-gold/15">
@@ -63,11 +105,11 @@ function NotificationsPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="truncate text-sm font-bold">{n.title}</h3>
-                    {n.unread && <span className="size-2 shrink-0 rounded-full bg-gold" />}
+                    {!n.is_read && <span className="size-2 shrink-0 rounded-full bg-gold" />}
                   </div>
                   <p className="mt-1 text-sm leading-7 text-muted-foreground">{n.body}</p>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {n.kind} · {n.time}
+                    {notificationKinds[n.kind] ?? n.kind} · {timeAgo(n.created_at)}
                   </p>
                 </div>
               </li>

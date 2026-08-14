@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      funding_interests: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          investor_id: string
+          message: string
+          request_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          investor_id: string
+          message?: string
+          request_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          investor_id?: string
+          message?: string
+          request_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_interests_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "property_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string
@@ -76,12 +117,15 @@ export type Database = {
       }
       property_requests: {
         Row: {
+          area_sqm: number
           city: string
           code: string
+          condition: string
           created_at: string
           damage_description: string
           district: string
           duration_months: number
+          estimated_value: number
           expected_return: number
           funding_needed: number
           id: string
@@ -90,17 +134,22 @@ export type Database = {
           progress: number
           property_type: string
           rehab_cost: number
+          return_notes: string
           stage_index: number
           status: string
+          title: string
           updated_at: string
         }
         Insert: {
+          area_sqm?: number
           city: string
           code?: string
+          condition?: string
           created_at?: string
           damage_description?: string
           district: string
           duration_months?: number
+          estimated_value?: number
           expected_return?: number
           funding_needed?: number
           id?: string
@@ -109,17 +158,22 @@ export type Database = {
           progress?: number
           property_type: string
           rehab_cost?: number
+          return_notes?: string
           stage_index?: number
           status?: string
+          title?: string
           updated_at?: string
         }
         Update: {
+          area_sqm?: number
           city?: string
           code?: string
+          condition?: string
           created_at?: string
           damage_description?: string
           district?: string
           duration_months?: number
+          estimated_value?: number
           expected_return?: number
           funding_needed?: number
           id?: string
@@ -128,8 +182,10 @@ export type Database = {
           progress?: number
           property_type?: string
           rehab_cost?: number
+          return_notes?: string
           stage_index?: number
           status?: string
+          title?: string
           updated_at?: string
         }
         Relationships: []
