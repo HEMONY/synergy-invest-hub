@@ -88,12 +88,14 @@ function Index() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 lg:px-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-extrabold">آخر تحديث</h2>
-            <p className="mt-2 text-sm text-muted-foreground">أحدث ما جرى على حسابك ومشاريعك.</p>
-          </div>
+      <PageHeader
+        title="فرص استثمارية مختارة"
+        subtitle="طلبات معتمدة من الإدارة وجاهزة للتمويل، مع العائد المتوقع لكل فرصة."
+      />
+
+      <section className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">أحدث الفرص المنشورة على المنصة.</p>
           <Button asChild variant="outline" size="sm">
             <Link to="/notifications">
               <Bell className="size-4" /> كل الإشعارات
@@ -101,58 +103,44 @@ function Index() {
           </Button>
         </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-3">
-          {projects.map((p) => (
-            <article key={p.id} className="card-surface p-6">
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="text-base font-bold">{p.title}</h3>
-                <span className="shrink-0 rounded-lg bg-accent px-2 py-1 text-xs font-bold text-accent-foreground">
-                  {p.code}
-                </span>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                المشرف: {p.supervisor} · {p.updatedAt}
-              </p>
-              <div className="mt-5">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span>نسبة الإنجاز</span>
-                  <span className="text-gold">{p.progress}%</span>
-                </div>
-                <Progress value={p.progress} className="mt-2 h-2" />
-              </div>
-              <p className="mt-4 text-sm font-bold text-gold">{formatSAR(p.funding)}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+        {isLoading && <p className="text-sm text-muted-foreground">جارٍ التحميل...</p>}
 
-      <PageHeader
-        title="فرص استثمارية مختارة"
-        subtitle="طلبات تأهيل معتمدة من الإدارة وجاهزة للتمويل من المستثمرين الموثقين."
-      />
+        {!isLoading && featured.length === 0 && (
+          <div className="card-surface p-12 text-center text-sm text-muted-foreground">
+            لا توجد فرص منشورة حالياً — كن أول من يضيف عقاره.
+          </div>
+        )}
 
-      <section className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {opportunities.slice(0, 3).map((o) => (
+          {featured.map((o) => (
             <article key={o.id} className="card-surface overflow-hidden p-6">
               <div className="flex items-center justify-between">
                 <span className="rounded-lg bg-gold/15 px-3 py-1 text-xs font-bold text-gold">
-                  {o.type}
+                  {o.property_type}
                 </span>
                 <span className="text-xs text-muted-foreground">{o.code}</span>
               </div>
               <h3 className="mt-4 text-base font-bold">
                 {o.city} — {o.district}
               </h3>
-              <p className="mt-2 line-clamp-2 text-sm leading-7 text-muted-foreground">{o.damage}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {conditionLabels[o.condition] ?? o.condition}
+              </p>
+              <p className="mt-2 line-clamp-2 text-sm leading-7 text-muted-foreground">
+                {o.damage_description}
+              </p>
+              <div className="mt-4 flex items-center justify-between rounded-xl border border-gold/40 bg-gold/10 px-4 py-3">
+                <span className="text-xs text-muted-foreground">العائد المتوقع</span>
+                <span className="text-xl font-extrabold text-gold">{o.expected_return}%</span>
+              </div>
               <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <dt className="text-xs text-muted-foreground">التمويل المطلوب</dt>
-                  <dd className="font-bold text-gold">{formatSAR(o.fundingNeeded)}</dd>
+                  <dd className="font-bold text-gold">{formatSAR(Number(o.funding_needed))}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">مدة التنفيذ</dt>
-                  <dd className="font-bold">{o.durationMonths} أشهر</dd>
+                  <dd className="font-bold">{o.duration_months} أشهر</dd>
                 </div>
               </dl>
               <Button asChild variant="gold" className="mt-5 w-full">
@@ -162,6 +150,7 @@ function Index() {
           ))}
         </div>
       </section>
+
     </SiteLayout>
   );
 }
