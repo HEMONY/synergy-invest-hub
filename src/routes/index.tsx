@@ -36,8 +36,15 @@ const features = [
 ];
 
 function Index() {
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["opportunities"],
+    queryFn: fetchOpportunities,
+  });
+  const featured = rows.slice(0, 3);
+
   return (
     <SiteLayout>
+
       <section className="relative overflow-hidden bg-navy-gradient">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 lg:grid-cols-2 lg:px-8 lg:py-24">
           <div>
