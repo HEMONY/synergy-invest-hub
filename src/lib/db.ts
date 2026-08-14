@@ -137,3 +137,60 @@ export async function createInterest(input: {
   const { error } = await supabase.from("funding_interests").insert(input);
   if (error) throw error;
 }
+
+/* ---------- Admin / supervisor ---------- */
+
+export async function hasRole(userId: string, role: "admin" | "supervisor") {
+  const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: role });
+  if (error) return false;
+  return Boolean(data);
+}
+
+export async function fetchAllRequests() {
+  const { data, error } = await supabase
+    .from("property_requests")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchAllProfiles() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchAllInterests() {
+  const { data, error } = await supabase
+    .from("funding_interests")
+    .select("*, property_requests(*)")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function updateRequest(
+  id: string,
+  patch: Partial<{ status: string; stage_index: number; progress: number }>,
+) {
+  const { error } = await supabase.from("property_requests").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateProfileVerification(id: string, verification_status: string) {
+  const { error } = await supabase.from("profiles").update({ verification_status }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateInterest(id: string, status: string) {
+  const { error } = await supabase.from("funding_interests").update({ status }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function notifyUser(userId: string, kind: string, title: string, body: string) {
+  await supabase.from("notifications").insert({ user_id: userId, kind, title, body });
+}
