@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as OpportunitiesRouteImport } from './routes/opportunities'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedNewRequestRouteImport } from './routes/_authenticated/new-request'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedRequestsRouteImport } from './routes/_authenticated/requests'
 
@@ -47,6 +48,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNewRequestRoute = AuthenticatedNewRequestRouteImport.update({
+  id: '/new-request',
+  path: '/new-request',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedNotificationsRoute =
   AuthenticatedNotificationsRouteImport.update({
     id: '/notifications',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/opportunities': typeof OpportunitiesRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/new-request': typeof AuthenticatedNewRequestRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/requests': typeof AuthenticatedRequestsRoute
 }
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/opportunities': typeof OpportunitiesRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/new-request': typeof AuthenticatedNewRequestRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/requests': typeof AuthenticatedRequestsRoute
 }
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/opportunities': typeof OpportunitiesRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/new-request': typeof AuthenticatedNewRequestRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/requests': typeof AuthenticatedRequestsRoute
 }
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/opportunities'
     | '/account'
     | '/admin'
+    | '/new-request'
     | '/notifications'
     | '/requests'
   fileRoutesByTo: FileRoutesByTo
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/opportunities'
     | '/account'
     | '/admin'
+    | '/new-request'
     | '/notifications'
     | '/requests'
   id:
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/opportunities'
     | '/_authenticated/account'
     | '/_authenticated/admin'
+    | '/_authenticated/new-request'
     | '/_authenticated/notifications'
     | '/_authenticated/requests'
   fileRoutesById: FileRoutesById
@@ -170,6 +182,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/new-request': {
+      id: '/_authenticated/new-request'
+      path: '/new-request'
+      fullPath: '/new-request'
+      preLoaderRoute: typeof AuthenticatedNewRequestRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/notifications': {
       id: '/_authenticated/notifications'
       path: '/notifications'
@@ -190,6 +209,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedNewRequestRoute: typeof AuthenticatedNewRequestRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedRequestsRoute: typeof AuthenticatedRequestsRoute
 }
@@ -197,6 +217,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedNewRequestRoute: AuthenticatedNewRequestRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedRequestsRoute: AuthenticatedRequestsRoute,
 }
