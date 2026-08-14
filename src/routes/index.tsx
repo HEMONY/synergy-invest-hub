@@ -60,7 +60,7 @@ function Index() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild variant="gold" size="lg">
-                <Link to="/requests">أضف عقارك</Link>
+                <Link to="/new-request">أضف عقارك</Link>
               </Button>
               <Button asChild variant="outlineGold" size="lg">
                 <Link to="/opportunities">أريد الاستثمار</Link>
