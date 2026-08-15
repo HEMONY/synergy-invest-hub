@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Plus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 import { PageHeader, SiteLayout } from "@/components/SiteLayout";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import {
   conditionLabels,
-  fetchMyInterests,
+  costLabel,
+  createInterest,
   fetchMyRequests,
   formatSAR,
   projectStages,
@@ -24,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/requests")({
       { title: "طلباتي ومشاريعي | Synergy" },
       {
         name: "description",
-        content: "تابع طلبات التمويل التي رفعتها ومشاريعك قيد التنفيذ ونسبة الإنجاز لكل مشروع.",
+        content: "تابع الطلبات التي رفعتها ومشاريعك قيد التنفيذ ونسبة الإنجاز لكل مشروع.",
       },
       { property: "og:title", content: "طلباتي ومشاريعي | Synergy" },
       {
@@ -62,6 +65,8 @@ function Stepper({ current }: { current: number }) {
 function RequestsPage() {
   const { user } = useAuth();
   const userId = user?.id ?? "";
+  const queryClient = useQueryClient();
+  const [pending, setPending] = useState<string | null>(null);
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["my-requests", userId],
@@ -69,28 +74,46 @@ function RequestsPage() {
     enabled: !!userId,
   });
 
-  const { data: interests = [] } = useQuery({
-    queryKey: ["my-interests", userId],
-    queryFn: () => fetchMyInterests(userId),
-    enabled: !!userId,
-  });
-
   const projects = requests.filter((r) =>
     ["matched", "in_progress", "completed"].includes(r.status),
   );
+
+  const applyToWork = async (id: string, amount: number, code: string) => {
+    if (!userId) return;
+    setPending(id);
+    try {
+      await createInterest({
+        request_id: id,
+        investor_id: userId,
+        amount,
+        message: "نريد العمل على هذا المشروع",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["my-interests", userId] });
+      toast.success("تم إرسال طلبك", {
+        description: `سيتواصل معك مشرف المنصة بخصوص المشروع ${code}.`,
+      });
+    } catch (err) {
+      const message = (err as Error).message;
+      toast.error(
+        message.includes("duplicate") ? "سبق أن أرسلت طلباً لهذا المشروع" : "تعذر إرسال الطلب",
+        { description: message.includes("duplicate") ? undefined : message },
+      );
+    } finally {
+      setPending(null);
+    }
+  };
 
   return (
     <SiteLayout>
       <PageHeader
         title="طلباتي"
-        subtitle="الطلبات التي رفعتها كصاحب عقار أو موّلتها كمستثمر، ومتابعة حالة كل مشروع."
+        subtitle="الطلبات التي رفعتها ومتابعة حالة كل مشروع."
       />
 
       <div className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
         <Tabs defaultValue="requests">
           <TabsList>
             <TabsTrigger value="requests">طلباتي</TabsTrigger>
-            <TabsTrigger value="investments">تمويلاتي</TabsTrigger>
             <TabsTrigger value="projects">مشاريعي</TabsTrigger>
           </TabsList>
 
@@ -112,7 +135,7 @@ function RequestsPage() {
 
             {!isLoading && requests.length === 0 && (
               <div className="card-surface p-10 text-center text-sm text-muted-foreground">
-                لم ترفع أي عقار بعد — ابدأ بإضافة عقار متضرر أو غير متضرر.
+                لم ترفع أي عقار بعد — ابدأ بإضافة عقارك.
               </div>
             )}
 
@@ -137,7 +160,7 @@ function RequestsPage() {
                 </p>
                 <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-4">
                   <div>
-                    <dt className="text-xs text-muted-foreground">تكلفة التنفيذ</dt>
+                    <dt className="text-xs text-muted-foreground">{costLabel(o.condition)}</dt>
                     <dd className="font-bold">{formatSAR(Number(o.rehab_cost))}</dd>
                   </div>
                   <div>
@@ -153,56 +176,17 @@ function RequestsPage() {
                     <dd className="font-bold">{o.duration_months} أشهر</dd>
                   </div>
                 </dl>
+
+                <Button
+                  variant="gold"
+                  className="mt-5 w-full sm:w-auto"
+                  disabled={pending === o.id}
+                  onClick={() => applyToWork(o.id, Number(o.funding_needed), o.code)}
+                >
+                  {pending === o.id ? "جارٍ الإرسال..." : "نريد العمل على هذا المشروع"}
+                </Button>
               </article>
             ))}
-          </TabsContent>
-
-          <TabsContent value="investments" className="mt-6 space-y-4">
-            {interests.length === 0 && (
-              <div className="card-surface p-10 text-center text-sm text-muted-foreground">
-                لم ترسل أي رغبة تمويل بعد — تصفح{" "}
-                <Link to="/opportunities" className="font-bold text-gold">
-                  الفرص المتاحة
-                </Link>
-                .
-              </div>
-            )}
-            {interests.map((i) => {
-              const r = i.property_requests;
-              return (
-                <article key={i.id} className="card-surface p-6">
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-base font-bold">
-                        {r?.title || `${r?.property_type} — ${r?.city} / ${r?.district}`}
-                      </h3>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {r?.code} · أُرسلت {timeAgo(i.created_at)}
-                      </p>
-                    </div>
-                    <Badge className="shrink-0 bg-gold/15 text-gold">
-                      {i.status === "pending" ? "قيد المراجعة" : statusLabels[i.status] ?? i.status}
-                    </Badge>
-                  </div>
-                  <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
-                    <div>
-                      <dt className="text-xs text-muted-foreground">مبلغ التمويل</dt>
-                      <dd className="font-bold text-gold">{formatSAR(Number(i.amount))}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-muted-foreground">العائد المتوقع</dt>
-                      <dd className="font-bold text-gold">{r?.expected_return ?? 0}%</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-muted-foreground">أرباح تقديرية</dt>
-                      <dd className="font-bold">
-                        {formatSAR((Number(i.amount) * Number(r?.expected_return ?? 0)) / 100)}
-                      </dd>
-                    </div>
-                  </dl>
-                </article>
-              );
-            })}
           </TabsContent>
 
           <TabsContent value="projects" className="mt-6 space-y-4">

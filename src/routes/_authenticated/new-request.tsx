@@ -15,7 +15,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
-import { createRequest, formatSAR, propertyTypes } from "@/lib/db";
+import {
+  cities,
+  conditionOptions,
+  costLabel,
+  createRequest,
+  formatSAR,
+  propertyTypes,
+  type ConditionKey,
+} from "@/lib/db";
 
 export const Route = createFileRoute("/_authenticated/new-request")({
   head: () => ({
@@ -24,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/new-request")({
       {
         name: "description",
         content:
-          "أضف عقاراً متضرراً أو عقاراً غير متضرر للتطوير، وحدد التمويل المطلوب والعائد المتوقع للمستثمرين.",
+          "أضف عقاراً متضرراً بحاجة لإعادة تأهيل، أو عقاراً يحتاج تشطيب، أو بناء عقار جديد، وحدد التمويل المطلوب والعائد المتوقع للشركة العقارية.",
       },
       { property: "og:title", content: "إضافة عقار جديد | Synergy" },
       {
@@ -42,11 +50,11 @@ function NewRequestPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
-  const [condition, setCondition] = useState<"damaged" | "intact">("damaged");
+  const [condition, setCondition] = useState<ConditionKey>("damaged");
   const [form, setForm] = useState({
     title: "",
     property_type: "سكني",
-    city: "",
+    city: "الخرطوم",
     district: "",
     area_sqm: "",
     estimated_value: "",
@@ -87,7 +95,7 @@ function NewRequestPage() {
         return_notes: form.return_notes.trim(),
       });
       toast.success("تم رفع الطلب بنجاح", {
-        description: "سيراجع فريق المنصة الطلب قبل نشره للمستثمرين.",
+        description: "سيراجع فريق المنصة الطلب قبل نشره للشركات العقارية.",
       });
       navigate({ to: "/requests" });
     } catch (err) {
@@ -103,20 +111,15 @@ function NewRequestPage() {
     <SiteLayout>
       <PageHeader
         title="إضافة عقار"
-        subtitle="ارفع عقاراً متضرراً بحاجة لتأهيل، أو عقاراً غير متضرر بحاجة لتمويل تطوير أو تشغيل."
+        subtitle="أرفع عقار متضرر بحاجة لإعادة تأهيل، أو عقار يحتاج تشطيب، أو بناء عقار جديد."
       />
 
       <div className="mx-auto max-w-3xl px-4 py-10 lg:px-8">
         <form onSubmit={submit} className="card-surface space-y-6 p-6">
           <div>
             <Label className="text-xs">حالة العقار</Label>
-            <div className="mt-2 grid grid-cols-2 gap-3">
-              {(
-                [
-                  { key: "damaged", label: "عقار متضرر", hint: "يحتاج ترميم وتأهيل" },
-                  { key: "intact", label: "عقار غير متضرر", hint: "تطوير أو استثمار مباشر" },
-                ] as const
-              ).map((c) => (
+            <div className="mt-2 grid gap-3 sm:grid-cols-3">
+              {conditionOptions.map((c) => (
                 <button
                   key={c.key}
                   type="button"
@@ -141,7 +144,7 @@ function NewRequestPage() {
                 className="mt-2"
                 value={form.title}
                 onChange={(e) => set("title")(e.target.value)}
-                placeholder="مثال: تطوير فيلا سكنية — حي النرجس"
+                placeholder="مثال: تشطيب منزل — ودنوباوي"
               />
             </div>
 
@@ -174,12 +177,18 @@ function NewRequestPage() {
 
             <div>
               <Label className="text-xs">المدينة</Label>
-              <Input
-                className="mt-2"
-                value={form.city}
-                onChange={(e) => set("city")(e.target.value)}
-                placeholder="الرياض"
-              />
+              <Select value={form.city} onValueChange={set("city")}>
+                <SelectTrigger className="mt-2 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {cities.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
@@ -188,13 +197,13 @@ function NewRequestPage() {
                 className="mt-2"
                 value={form.district}
                 onChange={(e) => set("district")(e.target.value)}
-                placeholder="حي النرجس"
+                placeholder="ودنوباوي"
               />
             </div>
 
             <div className="sm:col-span-2">
               <Label className="text-xs">
-                {damaged ? "وصف الأضرار" : "وصف العقار وخطة التطوير"}
+                {damaged ? "وصف الأضرار" : "وصف العقار وخطة العمل"}
               </Label>
               <Textarea
                 className="mt-2 min-h-28"
@@ -203,7 +212,9 @@ function NewRequestPage() {
                 placeholder={
                   damaged
                     ? "تصدعات في الجدران وتلف في التمديدات..."
-                    : "عقار جاهز بحاجة لتمويل تشطيب/تأثيث أو تطوير دور إضافي..."
+                    : condition === "newbuild"
+                      ? "أرض جاهزة للبناء، المطلوب بناء منزل من طابقين..."
+                      : "المبنى جاهز ويحتاج تشطيب كامل: أرضيات، دهانات، كهرباء وسباكة..."
                 }
               />
             </div>
@@ -220,7 +231,7 @@ function NewRequestPage() {
             </div>
 
             <div>
-              <Label className="text-xs">{damaged ? "تكلفة التأهيل" : "تكلفة التطوير"}</Label>
+              <Label className="text-xs">{costLabel(condition)}</Label>
               <Input
                 className="mt-2"
                 inputMode="numeric"
@@ -255,7 +266,7 @@ function NewRequestPage() {
             </div>
 
             <div>
-              <Label className="text-xs">العائد المتوقع للمستثمر (%)</Label>
+              <Label className="text-xs">العائد المتوقع للشركة العقارية (%)</Label>
               <Input
                 className="mt-2"
                 inputMode="numeric"
@@ -266,7 +277,7 @@ function NewRequestPage() {
             </div>
 
             <div>
-              <Label className="text-xs">أرباح المستثمر التقديرية</Label>
+              <Label className="text-xs">أرباح الشركة العقارية المتوقعة</Label>
               <div className="mt-2 grid h-9 items-center rounded-md border border-border bg-muted/50 px-3 text-sm font-bold text-gold">
                 {formatSAR((num(form.funding_needed) * num(form.expected_return)) / 100)}
               </div>
@@ -278,7 +289,7 @@ function NewRequestPage() {
                 className="mt-2"
                 value={form.return_notes}
                 onChange={(e) => set("return_notes")(e.target.value)}
-                placeholder="مثال: يُسدد رأس المال والعائد دفعة واحدة عند البيع خلال 8 أشهر."
+                placeholder="مثال: السداد بالأقساط الشهرية."
               />
             </div>
           </div>

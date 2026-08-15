@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock3, MapPin, Search, TrendingUp, Wallet } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Clock3, MapPin, RotateCcw, Search, TrendingUp, Wallet } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { PageHeader, SiteLayout } from "@/components/SiteLayout";
@@ -18,25 +18,30 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  cities,
   conditionLabels,
+  conditionOptions,
+  costLabel,
   createInterest,
   fetchOpportunities,
   formatSAR,
+  propertyTypes,
   statusLabels,
 } from "@/lib/db";
 
 export const Route = createFileRoute("/opportunities")({
   head: () => ({
     meta: [
-      { title: "الفرص الاستثمارية | Synergy" },
+      { title: "مشاريع التطوير العقاري | Synergy" },
       {
         name: "description",
-        content: "تصفح فرص العقارات المعتمدة وقارن العائد المتوقع والأرباح التقديرية لكل فرصة.",
+        content:
+          "تصفح مشاريع التطوير العقاري المعتمدة وقارن العائد المتوقع والأرباح التقديرية لكل مشروع.",
       },
-      { property: "og:title", content: "الفرص الاستثمارية | Synergy" },
+      { property: "og:title", content: "مشاريع التطوير العقاري | Synergy" },
       {
         property: "og:description",
-        content: "فرص تمويل عقارية معتمدة مع عائد متوقع واضح في منصة Synergy.",
+        content: "مشاريع عقارية معتمدة مع عائد متوقع واضح للشركات العقارية في منصة Synergy.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -44,6 +49,18 @@ export const Route = createFileRoute("/opportunities")({
   }),
   component: OpportunitiesPage,
 });
+
+const defaultFilters = {
+  query: "",
+  type: "الكل",
+  city: "الكل",
+  condition: "الكل",
+  minReturn: 0,
+  maxFunding: 5000000,
+  maxDuration: 36,
+};
+
+type Filters = typeof defaultFilters;
 
 function OpportunitiesPage() {
   const { user } = useAuth();
@@ -53,32 +70,28 @@ function OpportunitiesPage() {
     queryFn: fetchOpportunities,
   });
 
-  const [query, setQuery] = useState("");
-  const [type, setType] = useState("الكل");
-  const [city, setCity] = useState("الكل");
-  const [condition, setCondition] = useState("الكل");
-  const [minReturn, setMinReturn] = useState(0);
-  const [maxFunding, setMaxFunding] = useState(1000000);
-  const [maxDuration, setMaxDuration] = useState(12);
+  const [draft, setDraft] = useState<Filters>(defaultFilters);
+  const [applied, setApplied] = useState<Filters>(defaultFilters);
   const [pending, setPending] = useState<string | null>(null);
 
-  const cities = useMemo(() => ["الكل", ...new Set(rows.map((o) => o.city))], [rows]);
-  const types = useMemo(() => ["الكل", ...new Set(rows.map((o) => o.property_type))], [rows]);
+  const setField = <K extends keyof Filters>(k: K, v: Filters[K]) =>
+    setDraft((d) => ({ ...d, [k]: v }));
 
   const results = rows.filter(
     (o) =>
-      (type === "الكل" || o.property_type === type) &&
-      (city === "الكل" || o.city === city) &&
-      (condition === "الكل" || conditionLabels[o.condition] === condition) &&
-      Number(o.expected_return) >= minReturn &&
-      Number(o.funding_needed) <= maxFunding &&
-      o.duration_months <= maxDuration &&
-      (o.district + o.city + o.damage_description + o.title).includes(query.trim()),
+      (applied.type === "الكل" || o.property_type === applied.type) &&
+      (applied.city === "الكل" || o.city === applied.city) &&
+      (applied.condition === "الكل" ||
+        (conditionLabels[o.condition] ?? o.condition) === applied.condition) &&
+      Number(o.expected_return) >= applied.minReturn &&
+      Number(o.funding_needed) <= applied.maxFunding &&
+      o.duration_months <= applied.maxDuration &&
+      (o.district + o.city + o.damage_description + o.title).includes(applied.query.trim()),
   );
 
   const handleInterest = async (id: string, amount: number, code: string) => {
     if (!user) {
-      toast.info("سجّل الدخول أولاً", { description: "التمويل متاح للمستثمرين الموثقين فقط." });
+      toast.info("سجّل الدخول أولاً", { description: "هذه الخدمة للشركات العقارية الموثقة." });
       return;
     }
     setPending(id);
@@ -87,16 +100,16 @@ function OpportunitiesPage() {
         request_id: id,
         investor_id: user.id,
         amount,
-        message: "رغبة تمويل عبر صفحة الفرص",
+        message: "نريد العمل على هذا المشروع",
       });
       await queryClient.invalidateQueries({ queryKey: ["my-interests"] });
-      toast.success("تم إرسال رغبتك بالتمويل", {
-        description: `سيتواصل معك مشرف المنصة لمراجعة ربط الطلب ${code}.`,
+      toast.success("تم إرسال طلبك", {
+        description: `سيتواصل معك مشرف المنصة لمراجعة ربط المشروع ${code}.`,
       });
     } catch (err) {
       const message = (err as Error).message;
       toast.error(
-        message.includes("duplicate") ? "سبق أن أبديت رغبتك في هذه الفرصة" : "تعذر إرسال الطلب",
+        message.includes("duplicate") ? "سبق أن أرسلت طلباً لهذا المشروع" : "تعذر إرسال الطلب",
         { description: message.includes("duplicate") ? undefined : message },
       );
     } finally {
@@ -107,23 +120,29 @@ function OpportunitiesPage() {
   return (
     <SiteLayout>
       <PageHeader
-        title="الفرص"
-        subtitle="فرص عقارية معتمدة من الإدارة — متضررة وغير متضررة — مع العائد المتوقع لكل فرصة."
+        title="مشاريع التطوير العقاري"
+        subtitle="مشاريع معتمدة من الإدارة — إعادة تأهيل، تشطيب، أو بناء جديد — مع العائد المتوقع لكل مشروع."
       />
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 lg:grid-cols-[300px_1fr] lg:px-8">
         <aside className="card-surface h-fit p-6 lg:sticky lg:top-24">
           <h2 className="text-base font-bold">فلاتر البحث</h2>
 
-          <div className="mt-5 space-y-5">
+          <form
+            className="mt-5 space-y-5"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setApplied(draft);
+            }}
+          >
             <div>
               <Label className="text-xs">بحث</Label>
               <div className="relative mt-2">
                 <Search className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="ابحث عن فرصة..."
+                  value={draft.query}
+                  onChange={(e) => setField("query", e.target.value)}
+                  placeholder="ابحث عن مشروع..."
                   className="pr-9"
                 />
               </div>
@@ -131,12 +150,15 @@ function OpportunitiesPage() {
 
             <div>
               <Label className="text-xs">حالة العقار</Label>
-              <Select value={condition} onValueChange={setCondition}>
+              <Select
+                value={draft.condition}
+                onValueChange={(v) => setField("condition", v)}
+              >
                 <SelectTrigger className="mt-2 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {["الكل", "عقار متضرر", "عقار غير متضرر"].map((c) => (
+                  {["الكل", ...conditionOptions.map((c) => conditionLabels[c.key]!)].map((c) => (
                     <SelectItem key={c} value={c}>
                       {c}
                     </SelectItem>
@@ -147,12 +169,12 @@ function OpportunitiesPage() {
 
             <div>
               <Label className="text-xs">نوع العقار</Label>
-              <Select value={type} onValueChange={setType}>
+              <Select value={draft.type} onValueChange={(v) => setField("type", v)}>
                 <SelectTrigger className="mt-2 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {types.map((t) => (
+                  {["الكل", ...propertyTypes].map((t) => (
                     <SelectItem key={t} value={t}>
                       {t}
                     </SelectItem>
@@ -163,12 +185,12 @@ function OpportunitiesPage() {
 
             <div>
               <Label className="text-xs">المدينة</Label>
-              <Select value={city} onValueChange={setCity}>
+              <Select value={draft.city} onValueChange={(v) => setField("city", v)}>
                 <SelectTrigger className="mt-2 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {cities.map((c) => (
+                  {["الكل", ...cities].map((c) => (
                     <SelectItem key={c} value={c}>
                       {c}
                     </SelectItem>
@@ -179,46 +201,63 @@ function OpportunitiesPage() {
 
             <div>
               <Label className="text-xs">
-                العائد المتوقع لا يقل عن <span className="text-gold">{minReturn}%</span>
+                العائد المتوقع لا يقل عن <span className="text-gold">{draft.minReturn}%</span>
               </Label>
               <Slider
                 className="mt-4"
-                value={[minReturn]}
+                value={[draft.minReturn]}
                 min={0}
                 max={40}
                 step={1}
-                onValueChange={(v) => setMinReturn(v[0] ?? 0)}
+                onValueChange={(v) => setField("minReturn", v[0] ?? 0)}
               />
             </div>
 
             <div>
               <Label className="text-xs">
-                التمويل المطلوب حتى <span className="text-gold">{formatSAR(maxFunding)}</span>
+                التمويل المطلوب حتى <span className="text-gold">{formatSAR(draft.maxFunding)}</span>
               </Label>
               <Slider
                 className="mt-4"
-                value={[maxFunding]}
+                value={[draft.maxFunding]}
                 min={50000}
                 max={5000000}
                 step={50000}
-                onValueChange={(v) => setMaxFunding(v[0] ?? 0)}
+                onValueChange={(v) => setField("maxFunding", v[0] ?? 0)}
               />
             </div>
 
             <div>
               <Label className="text-xs">
-                مدة التنفيذ حتى <span className="text-gold">{maxDuration} شهر</span>
+                مدة التنفيذ حتى <span className="text-gold">{draft.maxDuration} شهر</span>
               </Label>
               <Slider
                 className="mt-4"
-                value={[maxDuration]}
+                value={[draft.maxDuration]}
                 min={1}
                 max={36}
                 step={1}
-                onValueChange={(v) => setMaxDuration(v[0] ?? 1)}
+                onValueChange={(v) => setField("maxDuration", v[0] ?? 1)}
               />
             </div>
-          </div>
+
+            <div className="flex gap-2">
+              <Button type="submit" variant="gold" className="flex-1 gap-2">
+                <Search className="size-4" /> بحث
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                aria-label="إعادة ضبط الفلاتر"
+                onClick={() => {
+                  setDraft(defaultFilters);
+                  setApplied(defaultFilters);
+                }}
+              >
+                <RotateCcw className="size-4" />
+              </Button>
+            </div>
+          </form>
         </aside>
 
         <section>
@@ -263,7 +302,7 @@ function OpportunitiesPage() {
                       <p className="text-2xl font-extrabold text-gold">{o.expected_return}%</p>
                     </div>
                     <div className="text-left">
-                      <p className="text-xs text-muted-foreground">أرباح تقديرية</p>
+                      <p className="text-xs text-muted-foreground">أرباح الشركة العقارية المتوقعة</p>
                       <p className="text-sm font-bold text-gold">{formatSAR(profit)}</p>
                       <p className="text-[11px] text-muted-foreground">
                         خلال {o.duration_months} أشهر
@@ -280,9 +319,7 @@ function OpportunitiesPage() {
 
                   <dl className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-muted/60 p-4 text-sm">
                     <div>
-                      <dt className="text-xs text-muted-foreground">
-                        {o.condition === "damaged" ? "تكلفة التأهيل" : "تكلفة التطوير"}
-                      </dt>
+                      <dt className="text-xs text-muted-foreground">{costLabel(o.condition)}</dt>
                       <dd className="font-bold">{formatSAR(Number(o.rehab_cost))}</dd>
                     </div>
                     <div>
@@ -309,7 +346,7 @@ function OpportunitiesPage() {
                     disabled={pending === o.id}
                     onClick={() => handleInterest(o.id, Number(o.funding_needed), o.code)}
                   >
-                    {pending === o.id ? "جارٍ الإرسال..." : "أريد تمويل هذا العقار"}
+                    {pending === o.id ? "جارٍ الإرسال..." : "نريد العمل على هذا المشروع"}
                   </Button>
                 </article>
               );
@@ -318,13 +355,13 @@ function OpportunitiesPage() {
 
           {isLoading && (
             <div className="card-surface p-12 text-center text-sm text-muted-foreground">
-              جارٍ تحميل الفرص...
+              جارٍ تحميل المشاريع...
             </div>
           )}
 
           {!isLoading && results.length === 0 && (
             <div className="card-surface p-12 text-center text-sm text-muted-foreground">
-              لا توجد فرص مطابقة لمعايير البحث الحالية.
+              لا توجد مشاريع مطابقة لمعايير البحث الحالية.
             </div>
           )}
         </section>

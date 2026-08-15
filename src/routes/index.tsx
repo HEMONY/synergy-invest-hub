@@ -1,28 +1,28 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BarChart3, Bell, Building2, CheckCircle2, ShieldCheck, Users } from "lucide-react";
+import { BarChart3, Bell, Building2, ShieldCheck, Users } from "lucide-react";
 
 import heroImage from "@/assets/hero-property.jpg";
 import { PageHeader, SiteLayout } from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import { conditionLabels, fetchOpportunities, formatSAR } from "@/lib/db";
-
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Synergy | من عقار متضرر إلى فرصة استثمارية" },
+      { title: "Synergy | حلول تمويل وتطوير عقاري بالأقساط المريحة" },
       {
         name: "description",
         content:
-          "منصة Synergy تربط أصحاب العقارات المتضررة بالمستثمرين والمقاولين لإعادة تأهيل العقارات وتحقيق أعلى عائد استثماري.",
+          "منصة Synergy تربط أصحاب العقارات المتضررة أو التي تحتاج تشطيب أو بناء جديد بأفضل شركات القطاع العقاري بنظام الدفع بالأقساط المريحة.",
       },
-      { property: "og:title", content: "Synergy | من عقار متضرر إلى فرصة استثمارية" },
+      { property: "og:title", content: "Synergy | حلول تمويل وتطوير عقاري بالأقساط المريحة" },
       {
         property: "og:description",
-        content: "وساطة استثمارية عقارية موثوقة بإشراف كامل من إدارة المنصة.",
+        content: "وساطة عقارية موثوقة بإشراف كامل من إدارة المنصة.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
@@ -30,8 +30,8 @@ export const Route = createFileRoute("/")({
 
 const features = [
   { icon: ShieldCheck, title: "موثوق وآمن", body: "جميع التعاملات موثقة وشفافة" },
-  { icon: Users, title: "مستثمرون موثوقون", body: "شبكة واسعة من المستثمرين" },
-  { icon: BarChart3, title: "أعلى عائد استثماري", body: "تحقيق أفضل عوائد على الاستثمار" },
+  { icon: Users, title: "شبكة واسعة", body: "شبكة واسعة من شركات القطاع العقاري" },
+  { icon: BarChart3, title: "أقساط مريحة", body: "خطط سداد ميسّرة تناسبك" },
   { icon: Building2, title: "إدارة متكاملة", body: "متابعة جميع مراحل المشروع" },
 ];
 
@@ -44,26 +44,25 @@ function Index() {
 
   return (
     <SiteLayout>
-
       <section className="relative overflow-hidden bg-navy-gradient">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 lg:grid-cols-2 lg:px-8 lg:py-24">
           <div>
-            
-            <h1 className="mt-6 text-4xl leading-[1.25] font-extrabold text-white sm:text-5xl">
-              من عقار متضرر
+            <h1 className="mt-6 text-3xl leading-[1.45] font-extrabold text-white sm:text-4xl">
+              لو عندك عقار متضرر أو عايز تشطب أو عايز تبني من جديد وما عندك كاش
               <br />
-              <span className="text-gold-gradient">إلى فرصة استثمارية</span>
+              <span className="text-gold-gradient">الحل مع سينرجي</span>
             </h1>
             <p className="mt-5 max-w-lg text-base leading-8 text-white/70">
-              نحن نربط بين أصحاب العقارات والمستثمرين والمقاولين لإعادة تأهيل العقارات وتحقيق أعلى
-              عائد استثماري.
+              منصة وساطة عقارية تربط بين أصحاب العقارات المتضررة التي تريد إعادة تأهيل وترميم، أو
+              أصحاب العقارات التي تريد تشطيب، أو أصحاب الأراضي الذين يريدون بناء عقار جديد، بأفضل
+              شركات القطاع العقاري بالأقساط المريحة — بإشراف كامل من إدارة المنصة.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild variant="gold" size="lg">
                 <Link to="/new-request">أضف عقارك</Link>
               </Button>
               <Button asChild variant="outlineGold" size="lg">
-                <Link to="/opportunities">أريد الاستثمار</Link>
+                <Link to="/opportunities">أبحث عن مشروع</Link>
               </Button>
             </div>
           </div>
@@ -98,13 +97,13 @@ function Index() {
       </section>
 
       <PageHeader
-        title="فرص استثمارية مختارة"
-        subtitle="طلبات معتمدة من الإدارة وجاهزة للتمويل، مع العائد المتوقع لكل فرصة."
+        title="عن منصة سينرجي"
+        subtitle="لو عندك عقار متضرر أو عايز تشطيب أو عايز تبني عقار جديد، في سينرجي نحن نربط بين أصحاب العقارات المتضررة التي تريد إعادة تأهيل، أو العقارات التي تريد تشطيب، أو الأراضي التي تريد بناء عقار جديد، مع أفضل الشركات التي تعمل في مجال القطاع العقاري بنظام الدفع بالأقساط المريحة."
       />
 
       <section className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">أحدث الفرص المنشورة على المنصة.</p>
+          <p className="text-sm text-muted-foreground">أحدث مشاريع التطوير العقاري على المنصة.</p>
           <Button asChild variant="outline" size="sm">
             <Link to="/notifications">
               <Bell className="size-4" /> كل الإشعارات
@@ -116,7 +115,7 @@ function Index() {
 
         {!isLoading && featured.length === 0 && (
           <div className="card-surface p-12 text-center text-sm text-muted-foreground">
-            لا توجد فرص منشورة حالياً — كن أول من يضيف عقاره.
+            لا توجد مشاريع منشورة حالياً — كن أول من يضيف عقاره.
           </div>
         )}
 
@@ -153,13 +152,12 @@ function Index() {
                 </div>
               </dl>
               <Button asChild variant="gold" className="mt-5 w-full">
-                <Link to="/opportunities">أريد تمويل هذا العقار</Link>
+                <Link to="/opportunities">نريد العمل على هذا المشروع</Link>
               </Button>
             </article>
           ))}
         </div>
       </section>
-
     </SiteLayout>
   );
 }
