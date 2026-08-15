@@ -151,7 +151,17 @@ export function Navbar() {
               </Link>
             </li>
           ))}
+          {user && isStaff && (
+            <li className="mt-2">
+              <Button asChild variant="gold" className="w-full gap-2">
+                <Link to="/admin" onClick={() => setOpen(false)}>
+                  <ShieldCheck className="size-4" /> لوحة الإدارة
+                </Link>
+              </Button>
+            </li>
+          )}
           <li className="mt-2">
+
             {user ? (
               <Button variant="outlineGold" className="w-full gap-2" onClick={handleSignOut}>
                 <LogOut className="size-4" />
