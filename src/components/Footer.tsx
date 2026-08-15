@@ -27,17 +27,7 @@ export function Footer() {
             </li>
           </ul>
         </div>
-        <div>
-          <h3 className="text-sm font-bold text-gold">الإدارة</h3>
-          <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-            <li>
-              <Link to="/admin">لوحة التحكم</Link>
-            </li>
-            <li>
-              <Link to="/account">الدعم الفني</Link>
-            </li>
-          </ul>
-        </div>
+        
         <div>
           <h3 className="text-sm font-bold text-gold">تواصل معنا</h3>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
