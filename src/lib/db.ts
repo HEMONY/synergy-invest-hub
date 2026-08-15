@@ -5,13 +5,15 @@ export type PropertyRequest = Tables<"property_requests">;
 export type FundingInterest = Tables<"funding_interests">;
 export type DbNotification = Tables<"notifications">;
 
-export const propertyTypes = ["سكني", "تجاري", "أرض", "مبنى إداري"] as const;
+export const propertyTypes = ["سكني", "تجاري", "صناعي", "إداري", "أرض"] as const;
+
+export const cities = ["الخرطوم", "أمدرمان", "بحري"] as const;
 
 export const projectStages = [
   "تم الرفع",
   "قيد المراجعة",
   "موافقة",
-  "بحث ممول",
+  "بحث عن شركة عقارية",
   "تم الربط",
   "قيد التنفيذ",
   "مكتمل",
@@ -28,8 +30,26 @@ export const statusLabels: Record<string, string> = {
 
 export const conditionLabels: Record<string, string> = {
   damaged: "عقار متضرر",
-  intact: "عقار غير متضرر",
+  finishing: "عقار يحتاج تشطيب",
+  newbuild: "بناء عقار جديد",
+  // legacy value
+  intact: "عقار يحتاج تشطيب",
 };
+
+export const conditionOptions = [
+  { key: "damaged", label: "عقار متضرر", hint: "يحتاج تأهيل وترميم" },
+  { key: "finishing", label: "عقار غير متضرر", hint: "يحتاج تشطيب" },
+  { key: "newbuild", label: "بناء عقار جديد", hint: "أرض جاهزة للبناء" },
+] as const;
+
+export type ConditionKey = (typeof conditionOptions)[number]["key"];
+
+export const costLabel = (condition: string) =>
+  condition === "damaged"
+    ? "تكلفة إعادة التأهيل"
+    : condition === "newbuild"
+      ? "تكلفة البناء"
+      : "تكلفة التشطيب";
 
 export const notificationKinds: Record<string, string> = {
   request: "طلب",
@@ -38,7 +58,18 @@ export const notificationKinds: Record<string, string> = {
   finance: "مالي",
 };
 
-export const formatSAR = (n: number) => `${Number(n || 0).toLocaleString("en-US")} ر.س`;
+export const docTypes = [
+  { key: "national_id", label: "بطاقة الهوية الوطنية" },
+  { key: "ownership", label: "وثيقة ملكية العقار" },
+  { key: "ownership_proof", label: "إثبات ملكية العقار" },
+  { key: "other", label: "مستند آخر" },
+] as const;
+
+export const docTypeLabels: Record<string, string> = Object.fromEntries(
+  docTypes.map((d) => [d.key, d.label]),
+);
+
+export const formatSAR = (n: number) => `${Number(n || 0).toLocaleString("en-US")} ج.س`;
 
 export function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -104,7 +135,7 @@ export async function markAllRead(userId: string) {
 export type NewRequestInput = {
   owner_id: string;
   title: string;
-  condition: "damaged" | "intact";
+  condition: ConditionKey;
   property_type: string;
   city: string;
   district: string;
@@ -138,12 +169,132 @@ export async function createInterest(input: {
   if (error) throw error;
 }
 
+/* ---------- Profile ---------- */
+
+export async function updateMyProfile(
+  id: string,
+  patch: { full_name?: string; phone?: string },
+) {
+  const { error } = await supabase.from("profiles").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+/* ---------- Documents ---------- */
+
+export type UserDocument = Tables<"documents">;
+
+export async function fetchMyDocuments(userId: string) {
+  const { data, error } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchAllDocuments() {
+  const { data, error } = await supabase
+    .from("documents")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function uploadDocument(userId: string, docType: string, file: File) {
+  const ext = file.name.split(".").pop() ?? "bin";
+  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error: upErr } = await supabase.storage.from("documents").upload(path, file, {
+    contentType: file.type || "application/octet-stream",
+    upsert: false,
+  });
+  if (upErr) throw upErr;
+
+  const { error } = await supabase.from("documents").insert({
+    user_id: userId,
+    doc_type: docType,
+    name: file.name,
+    file_path: path,
+    mime_type: file.type || "",
+    size_bytes: file.size,
+  });
+  if (error) throw error;
+}
+
+export async function documentUrl(path: string) {
+  const { data, error } = await supabase.storage.from("documents").createSignedUrl(path, 300);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+export async function deleteDocument(doc: UserDocument) {
+  await supabase.storage.from("documents").remove([doc.file_path]);
+  const { error } = await supabase.from("documents").delete().eq("id", doc.id);
+  if (error) throw error;
+}
+
+export async function reviewDocument(id: string, status: string, review_note = "") {
+  const { error } = await supabase.from("documents").update({ status, review_note }).eq("id", id);
+  if (error) throw error;
+}
+
+/* ---------- Activity log ---------- */
+
+export type ActivityLog = Tables<"activity_logs">;
+
+export async function logActivity(input: {
+  actor_id: string;
+  actor_name: string;
+  action: string;
+  entity_type: string;
+  entity_id?: string;
+  description?: string;
+}) {
+  await supabase.from("activity_logs").insert({
+    actor_id: input.actor_id,
+    actor_name: input.actor_name,
+    action: input.action,
+    entity_type: input.entity_type,
+    entity_id: input.entity_id ?? "",
+    description: input.description ?? "",
+  });
+}
+
+export async function fetchActivityLogs() {
+  const { data, error } = await supabase
+    .from("activity_logs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export const activityActions: Record<string, string> = {
+  publish_request: "اعتماد ونشر طلب",
+  hide_request: "إخفاء طلب",
+  reject_request: "رفض طلب",
+  verify_user: "توثيق مستخدم",
+  reject_user: "رفض توثيق مستخدم",
+  approve_match: "اعتماد ربط",
+  reject_match: "رفض ربط",
+  update_progress: "تحديث نسبة الإنجاز",
+  complete_project: "إنهاء مشروع",
+  approve_document: "قبول مستند",
+  reject_document: "رفض مستند",
+};
+
 /* ---------- Admin / supervisor ---------- */
 
 export async function hasRole(userId: string, role: "admin" | "supervisor") {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: role });
   if (error) return false;
   return Boolean(data);
+}
+
+export async function isStaff(userId: string) {
+  return (await hasRole(userId, "admin")) || (await hasRole(userId, "supervisor"));
 }
 
 export async function fetchAllRequests() {
