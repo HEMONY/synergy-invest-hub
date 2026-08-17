@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock3, MapPin, RotateCcw, Search, TrendingUp, Wallet } from "lucide-react";
+import { Clock3, MapPin, RotateCcw, Search, SlidersHorizontal, TrendingUp, Wallet } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -21,9 +21,11 @@ import {
   cities,
   conditionLabels,
   conditionOptions,
+  commissionNote,
   costLabel,
   createInterest,
   fetchOpportunities,
+  formatDuration,
   formatSAR,
   propertyTypes,
   statusLabels,
@@ -73,6 +75,7 @@ function OpportunitiesPage() {
   const [draft, setDraft] = useState<Filters>(defaultFilters);
   const [applied, setApplied] = useState<Filters>(defaultFilters);
   const [pending, setPending] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   const setField = <K extends keyof Filters>(k: K, v: Filters[K]) =>
     setDraft((d) => ({ ...d, [k]: v }));
@@ -120,12 +123,27 @@ function OpportunitiesPage() {
   return (
     <SiteLayout>
       <PageHeader
+        back
         title="المشاريع العقارية"
         subtitle="مشاريع معتمدة من الإدارة — إعادة تأهيل، تشطيب، أو بناء جديد — مع العائد المتوقع لكل مشروع."
       />
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 lg:grid-cols-[300px_1fr] lg:px-8">
-        <aside className="card-surface h-fit p-6 lg:sticky lg:top-24">
+        <Button
+          type="button"
+          variant="outline"
+          className="gap-2 lg:hidden"
+          onClick={() => setShowFilters((v) => !v)}
+        >
+          <SlidersHorizontal className="size-4" />
+          {showFilters ? "إخفاء فلاتر البحث" : "فلاتر البحث"}
+        </Button>
+
+        <aside
+          className={`card-surface h-fit p-6 lg:sticky lg:top-24 lg:block ${
+            showFilters ? "" : "hidden"
+          }`}
+        >
           <h2 className="text-base font-bold">فلاتر البحث</h2>
 
           <form
@@ -142,7 +160,7 @@ function OpportunitiesPage() {
                 <Input
                   value={draft.query}
                   onChange={(e) => setField("query", e.target.value)}
-                  placeholder="ابحث عن مشروع..."
+                  placeholder="مثال: ودنوباوي، تشطيب منزل، الخرطوم"
                   className="pr-9"
                 />
               </div>
@@ -293,7 +311,7 @@ function OpportunitiesPage() {
                       <p className="text-xs text-muted-foreground">أرباح الشركة العقارية المتوقعة</p>
                       <p className="text-sm font-bold text-gold">{formatSAR(profit)}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        خلال {o.duration_months} أشهر
+                        خلال {formatDuration(o.duration_months, o.duration_days)}
                       </p>
                     </div>
                   </div>
@@ -314,7 +332,9 @@ function OpportunitiesPage() {
                       <dt className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock3 className="size-3" /> مدة التنفيذ
                       </dt>
-                      <dd className="font-bold">{o.duration_months} أشهر</dd>
+                      <dd className="font-bold">
+                        {formatDuration(o.duration_months, o.duration_days)}
+                      </dd>
                     </div>
                     <div>
                       <dt className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -336,6 +356,9 @@ function OpportunitiesPage() {
                   >
                     {pending === o.id ? "جارٍ الإرسال..." : "نريد العمل على هذا المشروع"}
                   </Button>
+                  <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+                    {commissionNote}
+                  </p>
                 </article>
               );
             })}
