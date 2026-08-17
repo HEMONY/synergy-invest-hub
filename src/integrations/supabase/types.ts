@@ -199,6 +199,7 @@ export type Database = {
           created_at: string
           damage_description: string
           district: string
+          duration_days: number
           duration_months: number
           estimated_value: number
           expected_return: number
@@ -223,6 +224,7 @@ export type Database = {
           created_at?: string
           damage_description?: string
           district: string
+          duration_days?: number
           duration_months?: number
           estimated_value?: number
           expected_return?: number
@@ -247,6 +249,7 @@ export type Database = {
           created_at?: string
           damage_description?: string
           district?: string
+          duration_days?: number
           duration_months?: number
           estimated_value?: number
           expected_return?: number
