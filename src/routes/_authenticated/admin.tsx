@@ -6,11 +6,12 @@ import {
   FileCheck2,
   Handshake,
   LayoutDashboard,
+  Settings,
   ShieldCheck,
   Users,
   Wallet,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Bar,
@@ -25,10 +26,16 @@ import {
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  commissionNote,
   conditionLabels,
+  effectiveProgress,
   fetchAllInterests,
   fetchAllProfiles,
   fetchAllRequests,
@@ -67,6 +74,7 @@ const sections = [
   { key: "matching", label: "الربط والوساطة", icon: Handshake },
   { key: "projects", label: "المشاريع الجارية", icon: BarChart3 },
   { key: "roles", label: "الصلاحيات", icon: ShieldCheck },
+  { key: "settings", label: "الإعدادات", icon: Settings },
 ] as const;
 
 const verificationLabels: Record<string, string> = {
@@ -173,6 +181,7 @@ function AdminPage() {
           {active === "matching" && <MatchingSection />}
           {active === "projects" && <ProjectsSection />}
           {active === "roles" && <RolesSection />}
+          {active === "settings" && <SettingsSection />}
         </div>
       </div>
     </div>
@@ -509,21 +518,38 @@ function ProjectsSection() {
           </p>
           <div className="mt-4 flex justify-between text-xs font-semibold">
             <span>نسبة الإنجاز</span>
-            <span className="text-gold">{p.progress}%</span>
+            <span className="text-gold">{effectiveProgress(p.progress, p.stage_index)}%</span>
           </div>
-          <Progress value={p.progress} className="mt-2 h-2.5" />
+          <Progress value={effectiveProgress(p.progress, p.stage_index)} className="mt-2 h-2.5" />
+          <ProgressControl
+            value={effectiveProgress(p.progress, p.stage_index)}
+            onSave={(next) =>
+              mutate.mutate({
+                request: p,
+                patch: {
+                  progress: next,
+                  status: next === 100 ? "completed" : "in_progress",
+                  stage_index: next === 100 ? 6 : Math.max(p.stage_index, 5),
+                },
+                notify: {
+                  title: "تحديث نسبة الإنجاز",
+                  body: `وصل مشروع ${p.code} إلى نسبة إنجاز ${next}%.`,
+                },
+              })
+            }
+          />
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
               size="sm"
               variant="gold"
               onClick={() => {
-                const next = Math.min(100, p.progress + 10);
+                const next = Math.min(100, effectiveProgress(p.progress, p.stage_index) + 10);
                 mutate.mutate({
                   request: p,
                   patch: {
                     progress: next,
                     status: next === 100 ? "completed" : "in_progress",
-                    stage_index: next === 100 ? 6 : 5,
+                    stage_index: next === 100 ? 6 : Math.max(p.stage_index, 5),
                   },
                   notify: {
                     title: "تحديث نسبة الإنجاز",
@@ -576,6 +602,144 @@ function RolesSection() {
         <Activity className="mb-2 size-4 text-gold" />
         تُمنح صلاحيات المدير والمشرف من إدارة المنصة مباشرة في قاعدة البيانات لضمان الأمان.
       </p>
+    </div>
+  );
+}
+
+function ProgressControl({ value, onSave }: { value: number; onSave: (n: number) => void }) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => setDraft(value), [value]);
+
+  return (
+    <div className="mt-4 rounded-xl border border-border p-3">
+      <div className="flex items-center justify-between text-xs font-semibold">
+        <span>تحديد نسبة الإنجاز يدوياً</span>
+        <span className="text-gold">{draft}%</span>
+      </div>
+      <Slider
+        className="mt-3"
+        value={[draft]}
+        min={0}
+        max={100}
+        step={5}
+        onValueChange={(v) => setDraft(v[0] ?? 0)}
+      />
+      <Button
+        size="sm"
+        variant="outlineGold"
+        className="mt-3"
+        disabled={draft === value}
+        onClick={() => onSave(draft)}
+      >
+        حفظ النسبة
+      </Button>
+    </div>
+  );
+}
+
+const settingsKey = "synergy-admin-settings";
+
+function SettingsSection() {
+  const [settings, setSettings] = useState({
+    commissionRate: "5",
+    installmentMonths: "12",
+    minFunding: "50000",
+    autoPublish: false,
+    requireDocs: true,
+    emailAlerts: true,
+  });
+
+  useEffect(() => {
+    const raw = window.localStorage.getItem(settingsKey);
+    if (raw) {
+      try {
+        setSettings((s) => ({ ...s, ...JSON.parse(raw) }));
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
+  const save = () => {
+    window.localStorage.setItem(settingsKey, JSON.stringify(settings));
+    toast.success("تم حفظ إعدادات المنصة");
+  };
+
+  const field = (k: keyof typeof settings) => (v: string) =>
+    setSettings((s) => ({ ...s, [k]: v }));
+
+  return (
+    <div className="space-y-6">
+      <section className="card-surface p-6">
+        <h3 className="text-base font-bold">إعدادات العمولة والسداد</h3>
+        <p className="mt-1 text-xs text-muted-foreground">{commissionNote}</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div>
+            <Label className="text-xs">نسبة عمولة المنصة (%)</Label>
+            <Input
+              className="mt-2"
+              inputMode="numeric"
+              value={settings.commissionRate}
+              onChange={(e) => field("commissionRate")(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">عدد أقساط تحصيل العمولة (شهر)</Label>
+            <Input
+              className="mt-2"
+              inputMode="numeric"
+              value={settings.installmentMonths}
+              onChange={(e) => field("installmentMonths")(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">الحد الأدنى للتمويل</Label>
+            <Input
+              className="mt-2"
+              inputMode="numeric"
+              value={settings.minFunding}
+              onChange={(e) => field("minFunding")(e.target.value)}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="card-surface p-6">
+        <h3 className="text-base font-bold">سياسات المنصة</h3>
+        <div className="mt-4 space-y-4">
+          {[
+            {
+              key: "autoPublish" as const,
+              label: "نشر الطلبات تلقائياً بعد التوثيق",
+              hint: "بدون مراجعة يدوية إضافية",
+            },
+            {
+              key: "requireDocs" as const,
+              label: "إلزام المستندات قبل قبول الطلب",
+              hint: "صورة العقار، الهوية، وثيقة الملكية",
+            },
+            {
+              key: "emailAlerts" as const,
+              label: "تنبيهات البريد للمشرفين",
+              hint: "عند وصول طلب أو مستند جديد",
+            },
+          ].map((row) => (
+            <div key={row.key} className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{row.label}</p>
+                <p className="text-xs text-muted-foreground">{row.hint}</p>
+              </div>
+              <Switch
+                checked={settings[row.key]}
+                onCheckedChange={(v) => setSettings((s) => ({ ...s, [row.key]: v }))}
+              />
+            </div>
+          ))}
+        </div>
+        <Button variant="gold" className="mt-6" onClick={save}>
+          حفظ الإعدادات
+        </Button>
+      </section>
     </div>
   );
 }
