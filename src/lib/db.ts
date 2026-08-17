@@ -59,6 +59,7 @@ export const notificationKinds: Record<string, string> = {
 };
 
 export const docTypes = [
+  { key: "property_photo", label: "صورة العقار" },
   { key: "national_id", label: "بطاقة الهوية الوطنية" },
   { key: "ownership", label: "وثيقة ملكية العقار" },
   { key: "ownership_proof", label: "إثبات ملكية العقار" },
@@ -68,6 +69,28 @@ export const docTypes = [
 export const docTypeLabels: Record<string, string> = Object.fromEntries(
   docTypes.map((d) => [d.key, d.label]),
 );
+
+/** مدة التنفيذ بصيغة عربية سليمة: «2 أشهر» / «15 يوم». */
+export function formatDuration(months: number, days = 0) {
+  const parts: string[] = [];
+  const m = Number(months) || 0;
+  const d = Number(days) || 0;
+  if (m > 0) parts.push(`${m} ${m === 1 ? "شهر" : m === 2 ? "شهرين" : m <= 10 ? "أشهر" : "شهر"}`);
+  if (d > 0) parts.push(`${d} ${d === 1 ? "يوم" : d === 2 ? "يومين" : "يوم"}`);
+  return parts.length ? parts.join(" و ") : "غير محددة";
+}
+
+/** نسبة إنجاز محسوبة من مرحلة المشروع حتى لو لم تُحدَّث النسبة يدوياً. */
+export function effectiveProgress(progress: number, stageIndex: number) {
+  const fromStage = Math.round(
+    (Math.min(Math.max(stageIndex, 0), projectStages.length - 1) / (projectStages.length - 1)) * 100,
+  );
+  return Math.max(Number(progress) || 0, fromStage);
+}
+
+/** آلية تحصيل عمولة المنصة. */
+export const commissionNote =
+  "عمولة المنصة تُحصَّل من الشركة العقارية بنظام الأقساط الشهرية حسب نسبة الإنجاز.";
 
 export const formatSAR = (n: number) => `${Number(n || 0).toLocaleString("en-US")} ج.س`;
 
@@ -144,6 +167,7 @@ export type NewRequestInput = {
   damage_description: string;
   rehab_cost: number;
   duration_months: number;
+  duration_days: number;
   funding_needed: number;
   expected_return: number;
   return_notes: string;

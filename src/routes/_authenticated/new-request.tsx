@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { PageHeader, SiteLayout } from "@/components/SiteLayout";
@@ -19,8 +19,11 @@ import {
   cities,
   conditionOptions,
   costLabel,
+  commissionNote,
   createRequest,
+  formatDuration,
   formatSAR,
+  uploadDocument,
   propertyTypes,
   type ConditionKey,
 } from "@/lib/db";
@@ -46,6 +49,46 @@ export const Route = createFileRoute("/_authenticated/new-request")({
   component: NewRequestPage,
 });
 
+const requiredDocs = [
+  { key: "property_photo", label: "صورة العقار", accept: "image/*" },
+  { key: "national_id", label: "بطاقة الهوية الوطنية", accept: "image/*,application/pdf" },
+  { key: "ownership", label: "وثيقة ملكية العقار", accept: "image/*,application/pdf" },
+] as const;
+
+function FilePicker({
+  label,
+  accept,
+  file,
+  onPick,
+}: {
+  label: string;
+  accept: string;
+  file: File | null;
+  onPick: (f: File | null) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-3">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold">{label}</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {file ? file.name : "لم يتم اختيار ملف بعد"}
+        </p>
+      </div>
+      <input
+        ref={ref}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+      />
+      <Button type="button" size="sm" variant={file ? "outline" : "gold"} onClick={() => ref.current?.click()}>
+        {file ? "تغيير" : "اختيار ملف"}
+      </Button>
+    </div>
+  );
+}
+
 function NewRequestPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -61,9 +104,16 @@ function NewRequestPage() {
     damage_description: "",
     rehab_cost: "",
     duration_months: "6",
+    duration_days: "0",
     funding_needed: "",
     expected_return: "",
     return_notes: "",
+  });
+
+  const [files, setFiles] = useState<Record<string, File | null>>({
+    property_photo: null,
+    national_id: null,
+    ownership: null,
   });
 
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -74,6 +124,13 @@ function NewRequestPage() {
     if (!user) return;
     if (!form.title.trim() || !form.city.trim() || !form.district.trim()) {
       toast.error("أكمل البيانات الأساسية", { description: "العنوان والمدينة والحي مطلوبة." });
+      return;
+    }
+    const missing = requiredDocs.filter((d) => !files[d.key]);
+    if (missing.length > 0) {
+      toast.error("المرفقات إجبارية", {
+        description: `مطلوب رفع: ${missing.map((d) => d.label).join("، ")}`,
+      });
       return;
     }
     setSaving(true);
@@ -89,11 +146,16 @@ function NewRequestPage() {
         estimated_value: num(form.estimated_value),
         damage_description: form.damage_description.trim(),
         rehab_cost: num(form.rehab_cost),
-        duration_months: num(form.duration_months) || 6,
+        duration_months: num(form.duration_months),
+        duration_days: num(form.duration_days),
         funding_needed: num(form.funding_needed),
         expected_return: num(form.expected_return),
         return_notes: form.return_notes.trim(),
       });
+      for (const d of requiredDocs) {
+        const file = files[d.key];
+        if (file) await uploadDocument(user.id, d.key, file);
+      }
       toast.success("تم رفع الطلب بنجاح", {
         description: "سيراجع فريق المنصة الطلب قبل نشره للشركات العقارية.",
       });
@@ -111,6 +173,7 @@ function NewRequestPage() {
     <SiteLayout>
       <PageHeader
         title="إضافة عقار"
+        back
         subtitle="أرفع عقار  بحاجة لإعادة تأهيل، أو عقار يحتاج تشطيب، أو بناء عقار جديد."
       />
 
@@ -256,13 +319,30 @@ function NewRequestPage() {
             </div>
 
             <div>
-              <Label className="text-xs">مدة التنفيذ (بالأشهر)</Label>
-              <Input
-                className="mt-2"
-                inputMode="numeric"
-                value={form.duration_months}
-                onChange={(e) => set("duration_months")(e.target.value)}
-              />
+              <Label className="text-xs">مدة التنفيذ</Label>
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                <div>
+                  <Input
+                    inputMode="numeric"
+                    value={form.duration_months}
+                    onChange={(e) => set("duration_months")(e.target.value)}
+                    placeholder="عدد الأشهر"
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">أشهر</p>
+                </div>
+                <div>
+                  <Input
+                    inputMode="numeric"
+                    value={form.duration_days}
+                    onChange={(e) => set("duration_days")(e.target.value)}
+                    placeholder="عدد الأيام"
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">أيام</p>
+                </div>
+              </div>
+              <p className="mt-1 text-xs text-gold">
+                {formatDuration(num(form.duration_months), num(form.duration_days))}
+              </p>
             </div>
 
             <div>
@@ -291,6 +371,22 @@ function NewRequestPage() {
                 onChange={(e) => set("return_notes")(e.target.value)}
                 placeholder="مثال: السداد بالأقساط الشهرية."
               />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-gold/40 bg-gold/5 p-4">
+            <h3 className="text-sm font-bold">المرفقات المطلوبة (إجبارية)</h3>
+            <p className="mt-1 text-xs text-muted-foreground">{commissionNote}</p>
+            <div className="mt-4 space-y-3">
+              {requiredDocs.map((d) => (
+                <FilePicker
+                  key={d.key}
+                  label={d.label}
+                  accept={d.accept}
+                  file={files[d.key] ?? null}
+                  onPick={(f) => setFiles((prev) => ({ ...prev, [d.key]: f }))}
+                />
+              ))}
             </div>
           </div>
 

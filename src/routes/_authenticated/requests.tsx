@@ -11,10 +11,13 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  commissionNote,
   conditionLabels,
   costLabel,
   createInterest,
+  effectiveProgress,
   fetchMyRequests,
+  formatDuration,
   formatSAR,
   projectStages,
   statusLabels,
@@ -106,6 +109,7 @@ function RequestsPage() {
   return (
     <SiteLayout>
       <PageHeader
+        back
         title="طلباتي"
         subtitle="الطلبات التي رفعتها ومتابعة حالة كل مشروع."
       />
@@ -173,7 +177,9 @@ function RequestsPage() {
                   </div>
                   <div>
                     <dt className="text-xs text-muted-foreground">مدة التنفيذ</dt>
-                    <dd className="font-bold">{o.duration_months} أشهر</dd>
+                    <dd className="font-bold">
+                      {formatDuration(o.duration_months, o.duration_days)}
+                    </dd>
                   </div>
                 </dl>
 
@@ -214,9 +220,17 @@ function RequestsPage() {
                 <div className="mt-5">
                   <div className="flex justify-between text-xs font-semibold">
                     <span>نسبة الإنجاز</span>
-                    <span className="text-gold">{p.progress}%</span>
+                    <span className="text-gold">
+                      {effectiveProgress(p.progress, p.stage_index)}%
+                    </span>
                   </div>
-                  <Progress value={p.progress} className="mt-2 h-2.5" />
+                  <Progress
+                    value={effectiveProgress(p.progress, p.stage_index)}
+                    className="mt-2 h-2.5"
+                  />
+                  <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+                    المرحلة الحالية: {projectStages[p.stage_index] ?? projectStages[0]} · {commissionNote}
+                  </p>
                 </div>
 
                 <div className="mt-5">

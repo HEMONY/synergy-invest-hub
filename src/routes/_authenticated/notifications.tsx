@@ -57,7 +57,7 @@ function NotificationsPage() {
 
   return (
     <SiteLayout>
-      <PageHeader title="الإشعارات" subtitle="تحديثات الطلب وتحديثات المشروع أولاً بأول." />
+      <PageHeader back title="الإشعارات" subtitle="تحديثات الطلب وتحديثات المشروع أولاً بأول." />
 
       <div className="mx-auto max-w-4xl px-4 py-10 lg:px-8">
         <div className="flex flex-wrap items-center gap-2">
