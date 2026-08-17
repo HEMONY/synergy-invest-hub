@@ -32,13 +32,13 @@ import {
 export const Route = createFileRoute("/opportunities")({
   head: () => ({
     meta: [
-      { title: "مشاريع التطوير العقاري | Synergy" },
+      { title: "المشاريع العقارية | Synergy" },
       {
         name: "description",
         content:
-          "تصفح مشاريع التطوير العقاري المعتمدة وقارن العائد المتوقع والأرباح التقديرية لكل مشروع.",
+          "تصفح مالمشاريع العقارية المعتمدة وقارن العائد المتوقع والأرباح التقديرية لكل مشروع.",
       },
-      { property: "og:title", content: "مشاريع التطوير العقاري | Synergy" },
+      { property: "og:title", content: "المشاريع العقارية | Synergy" },
       {
         property: "og:description",
         content: "مشاريع عقارية معتمدة مع عائد متوقع واضح للشركات العقارية في منصة Synergy.",
@@ -120,7 +120,7 @@ function OpportunitiesPage() {
   return (
     <SiteLayout>
       <PageHeader
-        title="مشاريع التطوير العقاري"
+        title="المشاريع العقارية"
         subtitle="مشاريع معتمدة من الإدارة — إعادة تأهيل، تشطيب، أو بناء جديد — مع العائد المتوقع لكل مشروع."
       />
 
@@ -213,19 +213,7 @@ function OpportunitiesPage() {
               />
             </div>
 
-            <div>
-              <Label className="text-xs">
-                التمويل المطلوب حتى <span className="text-gold">{formatSAR(draft.maxFunding)}</span>
-              </Label>
-              <Slider
-                className="mt-4"
-                value={[draft.maxFunding]}
-                min={50000}
-                max={5000000}
-                step={50000}
-                onValueChange={(v) => setField("maxFunding", v[0] ?? 0)}
-              />
-            </div>
+            
 
             <div>
               <Label className="text-xs">

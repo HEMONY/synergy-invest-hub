@@ -111,7 +111,7 @@ function NewRequestPage() {
     <SiteLayout>
       <PageHeader
         title="إضافة عقار"
-        subtitle="أرفع عقار متضرر بحاجة لإعادة تأهيل، أو عقار يحتاج تشطيب، أو بناء عقار جديد."
+        subtitle="أرفع عقار  بحاجة لإعادة تأهيل، أو عقار يحتاج تشطيب، أو بناء عقار جديد."
       />
 
       <div className="mx-auto max-w-3xl px-4 py-10 lg:px-8">

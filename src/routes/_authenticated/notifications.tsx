@@ -32,7 +32,7 @@ const icons: Record<string, typeof Bell> = {
   finance: Wallet,
 };
 
-const filters = ["الكل", "طلب", "مشروع", "توثيق", "مالي"] as const;
+const filters = ["الكل", "طلب", "مشروع", "توثيق"] as const;
 
 function NotificationsPage() {
   const { user } = useAuth();

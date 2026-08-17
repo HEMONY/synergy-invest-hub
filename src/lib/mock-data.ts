@@ -185,7 +185,7 @@ export const notifications: Notification[] = [
   {
     id: "n3",
     kind: "طلب",
-    title: "مستثمر مهتم بطلبك",
+    title: "شركة غقارية مهتمه بطلبك",
     body: "قام مستثمر موثق باختيار طلبك #1263 وجارٍ مراجعة الربط من الإدارة.",
     time: "أمس",
     unread: true,

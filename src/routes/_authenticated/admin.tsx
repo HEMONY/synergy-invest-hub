@@ -219,42 +219,10 @@ function Overview() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="إجمالي المستخدمين" value={String(profiles.length)} icon={Users} />
         <Stat label="طلبات العقارات" value={String(requests.length)} icon={FileCheck2} />
-        <Stat label="إجمالي التمويل المطلوب" value={formatSAR(totalFunding)} icon={Wallet} />
         <Stat label="مشاريع جارية" value={String(running)} icon={BarChart3} />
       </div>
 
-      <div className="card-surface p-6">
-        <h2 className="text-base font-bold">التمويل حسب الشهر (بالألف ر.س)</h2>
-        <div className="mt-6 h-72">
-          {chart.length === 0 ? (
-            <p className="pt-20 text-center text-sm text-muted-foreground">لا توجد بيانات بعد.</p>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chart}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="var(--color-border)"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 12 }}
-                  stroke="var(--color-muted-foreground)"
-                />
-                <YAxis tick={{ fontSize: 12 }} stroke="var(--color-muted-foreground)" />
-                <RTooltip
-                  contentStyle={{
-                    background: "var(--color-popover)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: 12,
-                  }}
-                />
-                <Bar dataKey="value" fill="var(--color-gold)" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
+      
     </div>
   );
 }

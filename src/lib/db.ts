@@ -39,7 +39,7 @@ export const conditionLabels: Record<string, string> = {
 export const conditionOptions = [
   { key: "damaged", label: "عقار متضرر", hint: "يحتاج تأهيل وترميم" },
   { key: "finishing", label: "عقار غير متضرر", hint: "يحتاج تشطيب" },
-  { key: "newbuild", label: "بناء عقار جديد", hint: "أرض جاهزة للبناء" },
+  { key: "newbuild", label: "بناء عقار جديد", hint: "ارغب في  تملك عقار جديد" },
 ] as const;
 
 export type ConditionKey = (typeof conditionOptions)[number]["key"];

@@ -65,8 +65,8 @@ BEGIN
   SELECT owner_id, code INTO _owner, _code FROM public.property_requests WHERE id = NEW.request_id;
   IF _owner IS NOT NULL THEN
     INSERT INTO public.notifications (user_id, kind, title, body)
-    VALUES (_owner, 'request', 'مستثمر مهتم بطلبك',
-      'قام مستثمر موثق بإبداء رغبته في تمويل الطلب ' || COALESCE(_code, '') || ' وجارٍ مراجعة الربط من الإدارة.');
+    VALUES (_owner, 'request', "شركة غقارية مهتمه بطلبك",
+      'قامت شركة عقارية موثوقة بإبداء رغبة  في الغمل في الطلب رقم ' || COALESCE(_code, '') || ' وجارٍ مراجعة الربط من الإدارة.');
   END IF;
   RETURN NEW;
 END; $$;

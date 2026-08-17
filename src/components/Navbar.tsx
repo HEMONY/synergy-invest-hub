@@ -23,7 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const links = [
   { to: "/", label: "الرئيسية", icon: Home },
-  { to: "/opportunities", label: "مشاريع التطوير العقاري", icon: LineChart },
+  { to: "/opportunities", label: "المشاريع العقارية", icon: LineChart },
   { to: "/requests", label: "طلباتي", icon: Briefcase },
   { to: "/notifications", label: "الإشعارات", icon: Bell },
   { to: "/account", label: "حسابي", icon: User },

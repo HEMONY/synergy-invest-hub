@@ -170,7 +170,7 @@ function AuthPage() {
                   {(
                     [
                       { key: "owner", label: "صاحب عقار", icon: Building2 },
-                      { key: "investor", label: "مستثمر / ممول", icon: TrendingUp },
+                      { key: "investor", label: "شركة القطاع العقاري", icon: TrendingUp },
                     ] as const
                   ).map((r) => (
                     <button
