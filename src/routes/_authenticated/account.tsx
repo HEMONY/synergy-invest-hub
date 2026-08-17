@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, Download, LifeBuoy, Trash2, Upload } from "lucide-react";
+import { BadgeCheck, Bell, Download, KeyRound, LifeBuoy, LogOut, Moon, Sun, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -17,7 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/hooks/useAuth";
 import {
   deleteDocument,
@@ -63,7 +67,7 @@ const statusStyle: Record<string, string> = {
 };
 
 function AccountPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const userId = user?.id ?? "";
   const queryClient = useQueryClient();
 
@@ -100,7 +104,7 @@ function AccountPage() {
 
   return (
     <SiteLayout>
-      <PageHeader title="حسابي" subtitle="بياناتي، مستنداتي، عملياتي والدعم الفني." />
+      <PageHeader back title="حسابي" subtitle="بياناتي، مستنداتي، عملياتي والدعم الفني." />
 
       <div className="mx-auto max-w-5xl px-4 py-10 lg:px-8">
         <div className="card-surface mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 p-6">
@@ -131,6 +135,7 @@ function AccountPage() {
             <TabsTrigger value="profile">بياناتي</TabsTrigger>
             <TabsTrigger value="docs">مستنداتي</TabsTrigger>
             <TabsTrigger value="payments">عملياتي</TabsTrigger>
+            <TabsTrigger value="settings">الإعدادات</TabsTrigger>
             <TabsTrigger value="support">الدعم</TabsTrigger>
           </TabsList>
 
@@ -208,6 +213,10 @@ function AccountPage() {
                 </tbody>
               </table>
             )}
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-6">
+            <SettingsPanel onSignOut={signOut} />
           </TabsContent>
 
           <TabsContent value="support" className="card-surface mt-6 p-6">
@@ -396,5 +405,108 @@ function DocumentsPanel({ userId }: { userId: string }) {
         </Button>
       </div>
     </>
+  );
+}
+
+function SettingsPanel({ onSignOut }: { onSignOut: () => Promise<void> }) {
+  const { theme, toggle } = useTheme();
+  const [prefs, setPrefs] = useState({ email: true, projects: true, marketing: false });
+  const [password, setPassword] = useState({ next: "", confirm: "" });
+  const [saving, setSaving] = useState(false);
+
+  const changePassword = async () => {
+    if (password.next.length < 8) {
+      toast.error("كلمة مرور قصيرة", { description: "الحد الأدنى 8 أحرف." });
+      return;
+    }
+    if (password.next !== password.confirm) {
+      toast.error("كلمتا المرور غير متطابقتين");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.auth.updateUser({ password: password.next });
+    setSaving(false);
+    if (error) toast.error("تعذر تغيير كلمة المرور", { description: error.message });
+    else {
+      setPassword({ next: "", confirm: "" });
+      toast.success("تم تغيير كلمة المرور");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <section className="card-surface p-6">
+        <h3 className="flex items-center gap-2 text-base font-bold">
+          {theme === "dark" ? <Moon className="size-5 text-gold" /> : <Sun className="size-5 text-gold" />}
+          مظهر المنصة
+        </h3>
+        <div className="mt-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold">الوضع الداكن</p>
+            <p className="text-xs text-muted-foreground">اختر المظهر المريح لعينك.</p>
+          </div>
+          <Switch checked={theme === "dark"} onCheckedChange={toggle} />
+        </div>
+      </section>
+
+      <section className="card-surface p-6">
+        <h3 className="flex items-center gap-2 text-base font-bold">
+          <Bell className="size-5 text-gold" /> الإشعارات
+        </h3>
+        <div className="mt-4 space-y-4">
+          {[
+            { key: "email" as const, label: "إشعارات البريد الإلكتروني", hint: "تحديثات الحساب والتوثيق" },
+            { key: "projects" as const, label: "تحديثات المشاريع", hint: "نسبة الإنجاز وتغير المراحل" },
+            { key: "marketing" as const, label: "العروض والأخبار", hint: "مستجدات المنصة" },
+          ].map((row) => (
+            <div key={row.key} className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{row.label}</p>
+                <p className="text-xs text-muted-foreground">{row.hint}</p>
+              </div>
+              <Switch
+                checked={prefs[row.key]}
+                onCheckedChange={(v) => setPrefs((p) => ({ ...p, [row.key]: v }))}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card-surface p-6">
+        <h3 className="flex items-center gap-2 text-base font-bold">
+          <KeyRound className="size-5 text-gold" /> الأمان
+        </h3>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label>كلمة المرور الجديدة</Label>
+            <Input
+              className="mt-2"
+              type="password"
+              dir="ltr"
+              value={password.next}
+              onChange={(e) => setPassword((p) => ({ ...p, next: e.target.value }))}
+            />
+          </div>
+          <div>
+            <Label>تأكيد كلمة المرور</Label>
+            <Input
+              className="mt-2"
+              type="password"
+              dir="ltr"
+              value={password.confirm}
+              onChange={(e) => setPassword((p) => ({ ...p, confirm: e.target.value }))}
+            />
+          </div>
+        </div>
+        <Button variant="gold" className="mt-4" disabled={saving} onClick={changePassword}>
+          {saving ? "جارٍ الحفظ..." : "تحديث كلمة المرور"}
+        </Button>
+        <Separator className="my-6" />
+        <Button variant="outline" className="gap-2" onClick={() => void onSignOut()}>
+          <LogOut className="size-4" /> تسجيل الخروج
+        </Button>
+      </section>
+    </div>
   );
 }
