@@ -194,8 +194,12 @@ function AdminPage() {
           {active === "requests" && <RequestsSection />}
           {active === "matching" && <MatchingSection />}
           {active === "projects" && <ProjectsSection />}
+          {active === "docs" && <DocumentsSection />}
           {active === "roles" && <RolesSection />}
+          {active === "payments" && <PaymentsSection />}
           {active === "settings" && <SettingsSection />}
+          {active === "activity" && <ActivitySection />}
+
         </div>
       </div>
     </div>
