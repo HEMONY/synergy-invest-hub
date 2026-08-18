@@ -761,3 +761,261 @@ function SettingsSection() {
     </div>
   );
 }
+
+/* ---------- توثيق المستندات ---------- */
+
+function DocumentsSection() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: docs = [] } = useQuery({ queryKey: ["admin-docs"], queryFn: fetchAllDocuments });
+  const { data: profiles = [] } = useQuery({ queryKey: ["admin-profiles"], queryFn: fetchAllProfiles });
+
+  const review = useMutation({
+    mutationFn: async ({ id, status, name }: { id: string; status: string; name: string }) => {
+      await reviewDocument(id, status);
+      if (user)
+        await logActivity({
+          actor_id: user.id,
+          actor_name: user.email ?? "",
+          action: status === "approved" ? "approve_document" : "reject_document",
+          entity_type: "document",
+          entity_id: id,
+          description: name,
+        });
+    },
+    onSuccess: () => {
+      toast.success("تم تحديث حالة المستند");
+      void queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
+    },
+    onError: (e: Error) => toast.error("تعذر التحديث", { description: e.message }),
+  });
+
+  const nameOf = (id: string) =>
+    profiles.find((p) => p.id === id)?.full_name || "مستخدم";
+
+  const open = async (path: string) => {
+    try {
+      window.open(await documentUrl(path), "_blank", "noopener");
+    } catch (e) {
+      toast.error("تعذر فتح الملف", { description: (e as Error).message });
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {docs.length === 0 && (
+        <p className="card-surface p-6 text-sm text-muted-foreground">لا توجد مستندات بعد.</p>
+      )}
+      {docs.map((d) => (
+        <div key={d.id} className="card-surface p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold">
+                {docTypeLabels[d.doc_type] ?? d.doc_type} — {nameOf(d.user_id)}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                {d.name} · {timeAgo(d.created_at)}
+              </p>
+            </div>
+            <Badge className={statusStyle[d.status] ?? ""}>
+              {verificationLabels[d.status] ?? d.status}
+            </Badge>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => void open(d.file_path)}>
+              عرض الملف
+            </Button>
+            <Button
+              size="sm"
+              variant="gold"
+              onClick={() => review.mutate({ id: d.id, status: "approved", name: d.name })}
+            >
+              قبول
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => review.mutate({ id: d.id, status: "rejected", name: d.name })}
+            >
+              رفض
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ---------- المدفوعات والعمولات ---------- */
+
+function PaymentsSection() {
+  const { data: requests = [] } = useRequests();
+  const [rate, setRate] = useState(() => {
+    if (typeof window === "undefined") return 5;
+    const raw = window.localStorage.getItem(settingsKey);
+    try {
+      return Number(raw ? (JSON.parse(raw).commissionRate ?? 5) : 5) || 5;
+    } catch {
+      return 5;
+    }
+  });
+
+  const active = requests.filter((r) => ["matched", "in_progress", "completed"].includes(r.status));
+  const totalFunding = active.reduce((s, r) => s + Number(r.funding_needed || 0), 0);
+  const totalCommission = (totalFunding * rate) / 100;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Stat label="إجمالي التمويل المرتبط" value={formatSAR(totalFunding)} icon={Wallet} />
+        <Stat label={`عمولة المنصة (${rate}%)`} value={formatSAR(totalCommission)} icon={Receipt} />
+        <Stat label="مشاريع نشطة" value={String(active.length)} icon={BarChart3} />
+      </div>
+
+      <section className="card-surface p-6">
+        <h3 className="text-base font-bold">حاسبة العمولة</h3>
+        <p className="mt-1 text-xs text-muted-foreground">{commissionNote}</p>
+        <div className="mt-4 max-w-xs">
+          <Label className="text-xs">نسبة العمولة (%)</Label>
+          <Input
+            className="mt-2"
+            inputMode="numeric"
+            value={String(rate)}
+            onChange={(e) => setRate(Number(e.target.value) || 0)}
+          />
+        </div>
+      </section>
+
+      <section className="card-surface overflow-x-auto p-6">
+        <h3 className="mb-4 text-base font-bold">تفاصيل المشاريع</h3>
+        <table className="w-full min-w-[560px] text-right text-sm">
+          <thead className="text-xs text-muted-foreground">
+            <tr>
+              <th className="pb-3">المشروع</th>
+              <th className="pb-3">التمويل</th>
+              <th className="pb-3">العمولة</th>
+              <th className="pb-3">القسط الشهري</th>
+            </tr>
+          </thead>
+          <tbody>
+            {active.map((r) => {
+              const commission = (Number(r.funding_needed || 0) * rate) / 100;
+              const months = Math.max(Number(r.duration_months || 1), 1);
+              return (
+                <tr key={r.id} className="border-t border-border">
+                  <td className="py-3">{r.title || r.code}</td>
+                  <td className="py-3">{formatSAR(Number(r.funding_needed))}</td>
+                  <td className="py-3">{formatSAR(commission)}</td>
+                  <td className="py-3">{formatSAR(commission / months)}</td>
+                </tr>
+              );
+            })}
+            {active.length === 0 && (
+              <tr>
+                <td colSpan={4} className="py-6 text-center text-muted-foreground">
+                  لا توجد مشاريع مرتبطة بعد.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </section>
+    </div>
+  );
+}
+
+/* ---------- سجل النشاط ---------- */
+
+function ActivitySection() {
+  const { data: logs = [] } = useQuery({ queryKey: ["admin-activity"], queryFn: fetchActivityLogs });
+  const [q, setQ] = useState("");
+  const [action, setAction] = useState("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  const filtered = useMemo(
+    () =>
+      logs.filter((l) => {
+        const text = `${l.actor_name} ${l.description} ${l.entity_id}`.toLowerCase();
+        if (q && !text.includes(q.toLowerCase())) return false;
+        if (action !== "all" && l.action !== action) return false;
+        const t = new Date(l.created_at).getTime();
+        if (from && t < new Date(from).getTime()) return false;
+        if (to && t > new Date(to).getTime() + 86400000) return false;
+        return true;
+      }),
+    [logs, q, action, from, to],
+  );
+
+  const usedActions = Array.from(new Set(logs.map((l) => l.action)));
+
+  return (
+    <div className="space-y-6">
+      <section className="card-surface grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <Label className="text-xs">بحث بالمستخدم أو الوصف</Label>
+          <Input className="mt-2" value={q} onChange={(e) => setQ(e.target.value)} placeholder="مثال: أحمد" />
+        </div>
+        <div>
+          <Label className="text-xs">نوع العملية</Label>
+          <select
+            className="mt-2 h-10 w-full rounded-xl border border-input bg-background px-3 text-sm"
+            value={action}
+            onChange={(e) => setAction(e.target.value)}
+          >
+            <option value="all">كل العمليات</option>
+            {usedActions.map((a) => (
+              <option key={a} value={a}>
+                {activityActions[a] ?? a}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label className="text-xs">من تاريخ</Label>
+          <Input className="mt-2" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        </div>
+        <div>
+          <Label className="text-xs">إلى تاريخ</Label>
+          <Input className="mt-2" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        </div>
+      </section>
+
+      <section className="card-surface p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-base font-bold">النتائج ({filtered.length})</h3>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setQ("");
+              setAction("all");
+              setFrom("");
+              setTo("");
+            }}
+          >
+            مسح الفلاتر
+          </Button>
+        </div>
+        <div className="space-y-3">
+          {filtered.map((l) => (
+            <div key={l.id} className="rounded-xl border border-border p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold">
+                  {activityActions[l.action] ?? l.action} — {l.actor_name || "مستخدم"}
+                </p>
+                <span className="text-xs text-muted-foreground">{timeAgo(l.created_at)}</span>
+              </div>
+              {l.description && (
+                <p className="mt-1 text-xs text-muted-foreground">{l.description}</p>
+              )}
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <p className="text-sm text-muted-foreground">لا توجد نتائج مطابقة.</p>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
