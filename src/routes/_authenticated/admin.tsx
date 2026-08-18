@@ -79,13 +79,17 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 const sections = [
   { key: "overview", label: "نظرة عامة", icon: LayoutDashboard },
-  { key: "users", label: "إدارة المستخدمين", icon: Users },
-  { key: "requests", label: "الطلبات والفرص", icon: FileCheck2 },
+  { key: "users", label: "إدارة المستخدمين والشركات", icon: Users },
+  { key: "requests", label: "إدارة الطلبات والمشاريع", icon: FileCheck2 },
   { key: "matching", label: "الربط والوساطة", icon: Handshake },
   { key: "projects", label: "المشاريع الجارية", icon: BarChart3 },
+  { key: "docs", label: "توثيق المستندات", icon: FileText },
   { key: "roles", label: "الصلاحيات", icon: ShieldCheck },
-  { key: "settings", label: "الإعدادات", icon: Settings },
+  { key: "payments", label: "المدفوعات والعمولات", icon: Receipt },
+  { key: "settings", label: "إعدادات المنصة", icon: Settings },
+  { key: "activity", label: "سجل النشاط", icon: Activity },
 ] as const;
+
 
 const verificationLabels: Record<string, string> = {
   approved: "موثّق",
