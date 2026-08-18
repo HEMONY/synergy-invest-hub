@@ -4,14 +4,16 @@ import {
   Activity,
   BarChart3,
   FileCheck2,
+  FileText,
   Handshake,
   LayoutDashboard,
+  Receipt,
   Settings,
   ShieldCheck,
   Users,
   Wallet,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Bar,
@@ -33,15 +35,22 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  activityActions,
   commissionNote,
   conditionLabels,
+  docTypeLabels,
+  documentUrl,
   effectiveProgress,
+  fetchActivityLogs,
+  fetchAllDocuments,
   fetchAllInterests,
   fetchAllProfiles,
   fetchAllRequests,
   formatSAR,
   hasRole,
+  logActivity,
   notifyUser,
+  reviewDocument,
   statusLabels,
   timeAgo,
   updateInterest,
@@ -49,6 +58,7 @@ import {
   updateRequest,
   type PropertyRequest,
 } from "@/lib/db";
+
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
