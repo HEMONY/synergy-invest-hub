@@ -411,6 +411,7 @@ function DocumentsPanel({ userId }: { userId: string }) {
 function SettingsPanel({ onSignOut }: { onSignOut: () => Promise<void> }) {
   const { theme, toggle } = useTheme();
   const [prefs, setPrefs] = useState({ email: true, projects: true, marketing: false });
+  const [privacy, setPrivacy] = useState({ showProfile: true, shareDocs: true });
   const [password, setPassword] = useState({ next: "", confirm: "" });
   const [saving, setSaving] = useState(false);
 
@@ -436,17 +437,41 @@ function SettingsPanel({ onSignOut }: { onSignOut: () => Promise<void> }) {
   return (
     <div className="space-y-6">
       <section className="card-surface p-6">
+        <h3 className="text-base font-bold">الملف الشخصي</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          الاسم ورقم الهاتف ونوع الحساب تُدار من تبويب «بياناتي»، والمستندات من تبويب «مستنداتي».
+        </p>
+      </section>
+
+      <section className="card-surface p-6">
         <h3 className="flex items-center gap-2 text-base font-bold">
-          {theme === "dark" ? <Moon className="size-5 text-gold" /> : <Sun className="size-5 text-gold" />}
-          مظهر المنصة
+          <KeyRound className="size-5 text-gold" /> الحساب والأمان
         </h3>
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <p className="text-sm font-semibold">الوضع الداكن</p>
-            <p className="text-xs text-muted-foreground">اختر المظهر المريح لعينك.</p>
+            <Label>كلمة المرور الجديدة</Label>
+            <Input
+              className="mt-2"
+              type="password"
+              dir="ltr"
+              value={password.next}
+              onChange={(e) => setPassword((p) => ({ ...p, next: e.target.value }))}
+            />
           </div>
-          <Switch checked={theme === "dark"} onCheckedChange={toggle} />
+          <div>
+            <Label>تأكيد كلمة المرور</Label>
+            <Input
+              className="mt-2"
+              type="password"
+              dir="ltr"
+              value={password.confirm}
+              onChange={(e) => setPassword((p) => ({ ...p, confirm: e.target.value }))}
+            />
+          </div>
         </div>
+        <Button variant="gold" className="mt-4" disabled={saving} onClick={changePassword}>
+          {saving ? "جارٍ الحفظ..." : "تحديث كلمة المرور"}
+        </Button>
       </section>
 
       <section className="card-surface p-6">
@@ -475,32 +500,103 @@ function SettingsPanel({ onSignOut }: { onSignOut: () => Promise<void> }) {
 
       <section className="card-surface p-6">
         <h3 className="flex items-center gap-2 text-base font-bold">
-          <KeyRound className="size-5 text-gold" /> الأمان
+          {theme === "dark" ? <Moon className="size-5 text-gold" /> : <Sun className="size-5 text-gold" />}
+          اللغة والتفضيلات
         </h3>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label>كلمة المرور الجديدة</Label>
-            <Input
-              className="mt-2"
-              type="password"
-              dir="ltr"
-              value={password.next}
-              onChange={(e) => setPassword((p) => ({ ...p, next: e.target.value }))}
-            />
+        <div className="mt-4 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold">الوضع الداكن</p>
+              <p className="text-xs text-muted-foreground">اختر المظهر المريح لعينك.</p>
+            </div>
+            <Switch checked={theme === "dark"} onCheckedChange={toggle} />
           </div>
-          <div>
-            <Label>تأكيد كلمة المرور</Label>
-            <Input
-              className="mt-2"
-              type="password"
-              dir="ltr"
-              value={password.confirm}
-              onChange={(e) => setPassword((p) => ({ ...p, confirm: e.target.value }))}
-            />
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold">لغة الواجهة</p>
+              <p className="text-xs text-muted-foreground">العربية هي اللغة الافتراضية للمنصة.</p>
+            </div>
+            <Select defaultValue="ar">
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ar">العربية</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-        <Button variant="gold" className="mt-4" disabled={saving} onClick={changePassword}>
-          {saving ? "جارٍ الحفظ..." : "تحديث كلمة المرور"}
+      </section>
+
+      <section className="card-surface p-6">
+        <h3 className="text-base font-bold">الخصوصية</h3>
+        <div className="mt-4 space-y-4">
+          {[
+            {
+              key: "showProfile" as const,
+              label: "إظهار اسمي للشركات العقارية",
+              hint: "عند إبداء رغبة العمل على مشروعك",
+            },
+            {
+              key: "shareDocs" as const,
+              label: "مشاركة مستنداتي مع الإدارة",
+              hint: "لازمة لإتمام التوثيق واعتماد الطلب",
+            },
+          ].map((row) => (
+            <div key={row.key} className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{row.label}</p>
+                <p className="text-xs text-muted-foreground">{row.hint}</p>
+              </div>
+              <Switch
+                checked={privacy[row.key]}
+                onCheckedChange={(v) => setPrivacy((p) => ({ ...p, [row.key]: v }))}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card-surface p-6">
+        <h3 className="flex items-center gap-2 text-base font-bold">
+          <Download className="size-5 text-gold" /> المدفوعات
+        </h3>
+        <p className="mt-2 text-sm text-muted-foreground">
+          لا توجد مدفوعات مباشرة على المستخدم؛ عمولة المنصة تُحصَّل من الشركة العقارية بنظام
+          الأقساط الشهرية حسب نسبة الإنجاز. تفاصيل عملياتك في تبويب «عملياتي».
+        </p>
+      </section>
+
+      <section className="card-surface p-6">
+        <h3 className="flex items-center gap-2 text-base font-bold">
+          <LifeBuoy className="size-5 text-gold" /> الدعم والمساعدة
+        </h3>
+        <p className="mt-2 text-sm text-muted-foreground">
+          لأي استفسار افتح تبويب «الدعم» وأرسل رسالتك، أو راسلنا على support@synergy.sd.
+        </p>
+      </section>
+
+      <section className="card-surface p-6">
+        <h3 className="text-base font-bold">الشروط والأحكام</h3>
+        <p className="mt-2 text-sm text-muted-foreground">
+          باستخدامك المنصة فأنت توافق على مراجعة الإدارة لبياناتك ومستنداتك، وعلى أن الربط مع
+          الشركات العقارية يتم بإشراف المنصة وبنظام الأقساط المتفق عليه.
+        </p>
+      </section>
+
+      <section className="card-surface p-6">
+        <h3 className="flex items-center gap-2 text-base font-bold text-destructive">
+          <Trash2 className="size-5" /> حذف الحساب
+        </h3>
+        <p className="mt-2 text-sm text-muted-foreground">
+          حذف الحساب إجراء نهائي. أرسل طلب الحذف للإدارة وسيتم تنفيذه بعد إغلاق أي مشاريع قائمة.
+        </p>
+        <Button
+          variant="outline"
+          className="mt-4 border-destructive/40 text-destructive"
+          onClick={() => toast.info("تم استلام طلب حذف الحساب", { description: "ستتواصل معك الإدارة قريباً." })}
+        >
+          طلب حذف الحساب
         </Button>
         <Separator className="my-6" />
         <Button variant="outline" className="gap-2" onClick={() => void onSignOut()}>
@@ -510,3 +606,4 @@ function SettingsPanel({ onSignOut }: { onSignOut: () => Promise<void> }) {
     </div>
   );
 }
+
