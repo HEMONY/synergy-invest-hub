@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { lovable } from "@/integrations/lovable/index";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
@@ -117,16 +116,17 @@ function AuthPage() {
 
   const handleGoogle = async () => {
     setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/requests` },
     });
-    if (result.error) {
+    if (error) {
       setLoading(false);
       toast.error("تعذّر تسجيل الدخول عبر Google");
       return;
     }
-    if (result.redirected) return;
-    navigate({ to: "/requests" });
+    // On success, Supabase redirects the browser to Google, then back to
+    // redirectTo above — nothing else to do here.
   };
 
   return (

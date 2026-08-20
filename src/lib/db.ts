@@ -174,6 +174,16 @@ export type NewRequestInput = {
   return_notes: string;
 };
 
+export async function updateMyRequest(id: string, patch: Partial<NewRequestInput>) {
+  const { error } = await supabase.from("property_requests").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function cancelMyRequest(id: string) {
+  const { error } = await supabase.from("property_requests").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export async function createRequest(input: NewRequestInput) {
   const { data, error } = await supabase
     .from("property_requests")

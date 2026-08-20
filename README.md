@@ -180,15 +180,71 @@ Light Mode: خلفية #F5F6F8 وأبيض نقي، عناوين ونصوص بل�
 
 اجعل التصميم بأكمله متسقاً مع صور الهوية المرفقة (الشعار، الألوان، شكل البطاقات، الأزرار، الأيقونات، وتصميم نسخة الجوال)، بحيث يبدو الموقع منتجاً حقيقياً جاهزاً للإطلاق التجاري، لا نموذجاً أولياً.  وهذه صور لتسيق والوان الموقع والشعار
 
-This project was built with [Lovable](https://lovable.dev).
+## 🧱 التقنيات الفعلية المستخدمة (Actual stack)
 
-## Build with Lovable
+ملاحظة: القسم أعلاه هو ملخص الفكرة/التصميم الأصلي. المنصة نُفّذت فعلياً بهذه التقنيات:
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/262c3eda-cc53-4107-bb15-5e2581095b37).
+- **Frontend**: React 19 + TanStack Start/Router + Tailwind CSS 4، خط Cairo، RTL كامل، Dark/Light Mode.
+- **Backend/DB**: Supabase (PostgreSQL + Auth + Storage + Row Level Security)، بدل Node/Express/MySQL المذكورة في الفكرة الأصلية. جميع منطق الصلاحيات (Owner/Investor/Admin/Supervisor) مطبّق عبر RLS policies في قاعدة البيانات، وليس عبر REST API منفصل.
+- **الإشعارات**: جدول `notifications` + PostgreSQL trigger (`notify_owner_on_interest`) يُنشئ إشعاراً تلقائياً لصاحب العقار عند إبداء شركة عقارية رغبتها بالعمل على طلبه.
+- **رفع الملفات**: Supabase Storage (bucket `documents`) مع سياسات RLS تقصر كل مستخدم على مجلده الخاص، وصلاحية اطّلاع إضافية للإدارة/المشرفين.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+## 🚀 التشغيل محلياً (Local setup)
+
+```bash
+npm install
+cp .env.example .env   # أو انسخ .env الموجود وعدّل القيم لمشروع Supabase الخاص بك
+npm run dev             # يشغّل على http://localhost:8080 افتراضياً
+```
+
+متغيرات البيئة المطلوبة في `.env` (خذها من إعدادات مشروعك في supabase.com → Project Settings → API):
+
+```
+SUPABASE_PROJECT_ID=
+SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_URL=
+VITE_SUPABASE_PROJECT_ID=
+VITE_SUPABASE_PUBLISHABLE_KEY=
+VITE_SUPABASE_URL=
+```
+
+## 🗄️ قاعدة البيانات (Migrations)
+
+كل تغييرات قاعدة البيانات موجودة كملفات SQL مرتبة زمنياً في `supabase/migrations/`. لتطبيقها على مشروع Supabase جديد:
+
+1. أنشئ مشروع جديد على [supabase.com](https://supabase.com).
+2. من `Project Settings → Database`، افتح SQL Editor.
+3. نفّذ ملفات `supabase/migrations/*.sql` **بترتيب اسم الملف** (الاسم يبدأ بتاريخ/وقت، فرتبها تصاعدياً) — أو استخدم Supabase CLI:
+   ```bash
+   supabase link --project-ref <project-ref>
+   supabase db push
+   ```
+4. أنشئ Storage bucket باسم `documents` (Private) من لوحة Supabase — السياسات (RLS policies) الخاصة به موجودة ضمن الـ migrations بالفعل.
+5. لتفعيل تسجيل الدخول عبر Google: من Supabase → `Authentication → Providers → Google`، فعّل المزود وأدخل Client ID/Secret من Google Cloud Console، وأضف رابط الموقع ضمن Redirect URLs.
+
+آخر ملف migration (`20260820120000_fix_status_constraint_and_notify_trigger.sql`) يحتوي على إصلاحين مهمين طُبّقا حديثاً — راجع قسم "آخر الإصلاحات" أدناه.
+
+## 🏗️ البناء والنشر (Build & deploy)
+
+```bash
+npm run build     # يبني للنشر — الإخراج في .output/ (هدف Cloudflare Workers عبر nitro)
+npm run preview   # لمعاينة نسخة البناء محلياً
+```
+
+المشروع مُعدّ افتراضياً للنشر على **Cloudflare Workers** (عبر `nitro`, preset `cloudflare-module`). للنشر:
+
+```bash
+npx wrangler deploy .output/server/index.mjs --config .output/server/wrangler.json
+```
+
+إن كنت تفضّل استضافة عادية (Node.js server) بدل Cloudflare، غيّر `defaultPreset: "cloudflare-module"` إلى `"node-server"` في `vite.config.ts`، ثم `npm run build` وشغّل `.output/server/index.mjs` بـ Node مباشرة.
+
+## 🔧 آخر الإصلاحات (Recent fixes — 2026-08-20)
+
+1. **خطأ "تعذر التحديث" عند تحديث نسبة الإنجاز أو إكمال المشروع**: قيد `property_requests_status_check` في قاعدة البيانات كان لا يسمح بالحالتين `in_progress` و`completed` رغم أن لوحة الإدارة تستخدمهما. تم توسيع القيد في migration جديد.
+2. **إشعار "شركة عقارية مهتمة بطلبك" لم يكن يُرسل**: كان نص العنوان بين علامتي اقتباس مزدوجتين (`"..."`) في دالة PostgreSQL، وهذا يُفسَّر كاسم عمود لا كنص، فيفشل الإدراج بصمت في كل مرة تُبدي فيها شركة عقارية اهتمامها بطلب. تم إصلاحه.
+3. **صفحة "طلباتي" كانت تعرض زر "نريد العمل على هذا المشروع" الخاص بالمستثمرين على طلبات صاحب العقار نفسه** بدل أزرار تعديل/إلغاء الطلب. تم استبداله بزر **تعديل الطلب** (نموذج تعديل مباشر) وزر **إلغاء الطلب** (مع تأكيد قبل الحذف).
+4. تمت إزالة كل الاعتماديات والملفات الخاصة بـ **Lovable** (`@lovable.dev/*`، تسجيل الدخول بـ Google عبر Lovable، تقرير الأخطاء) واستبدالها بحلول قياسية (Supabase OAuth مباشرة، `vite.config.ts` عادي، تسجيل أخطاء بسيط) بحيث يعمل المشروع كمنتج مستقل بالكامل.
 
 ## Development
 

@@ -7,14 +7,17 @@ import { toast } from "sonner";
 import { PageHeader, SiteLayout } from "@/components/SiteLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  cancelMyRequest,
   commissionNote,
   conditionLabels,
   costLabel,
-  createInterest,
   effectiveProgress,
   fetchMyRequests,
   formatDuration,
@@ -22,6 +25,8 @@ import {
   projectStages,
   statusLabels,
   timeAgo,
+  updateMyRequest,
+  type PropertyRequest,
 } from "@/lib/db";
 
 export const Route = createFileRoute("/_authenticated/requests")({
@@ -65,11 +70,95 @@ function Stepper({ current }: { current: number }) {
   );
 }
 
+function EditRequestForm({
+  request,
+  onCancel,
+  onSaved,
+}: {
+  request: PropertyRequest;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    title: request.title ?? "",
+    city: request.city,
+    district: request.district,
+    damage_description: request.damage_description,
+  });
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await updateMyRequest(request.id, {
+        title: form.title.trim(),
+        city: form.city.trim(),
+        district: form.district.trim(),
+        damage_description: form.damage_description.trim(),
+      });
+      toast.success("تم تحديث الطلب");
+      onSaved();
+    } catch (err) {
+      toast.error("تعذر تحديث الطلب", { description: (err as Error).message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 space-y-3 rounded-xl border border-gold/40 bg-gold/5 p-4">
+      <div>
+        <Label className="text-xs">عنوان الطلب</Label>
+        <Input
+          className="mt-2"
+          value={form.title}
+          onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+        />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <Label className="text-xs">المدينة</Label>
+          <Input
+            className="mt-2"
+            value={form.city}
+            onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">الحي</Label>
+          <Input
+            className="mt-2"
+            value={form.district}
+            onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))}
+          />
+        </div>
+      </div>
+      <div>
+        <Label className="text-xs">الوصف</Label>
+        <Textarea
+          className="mt-2 min-h-24"
+          value={form.damage_description}
+          onChange={(e) => setForm((f) => ({ ...f, damage_description: e.target.value }))}
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" variant="gold" disabled={saving} onClick={save}>
+          {saving ? "جارٍ الحفظ..." : "حفظ التعديلات"}
+        </Button>
+        <Button size="sm" variant="outline" onClick={onCancel}>
+          تراجع
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function RequestsPage() {
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const queryClient = useQueryClient();
-  const [pending, setPending] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["my-requests", userId],
@@ -81,28 +170,23 @@ function RequestsPage() {
     ["matched", "in_progress", "completed"].includes(r.status),
   );
 
-  const applyToWork = async (id: string, amount: number, code: string) => {
-    if (!userId) return;
-    setPending(id);
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["my-requests", userId] });
+  };
+
+  const cancelRequest = async (id: string, code: string) => {
+    if (!window.confirm(`هل تريد بالتأكيد إلغاء الطلب ${code}؟ لا يمكن التراجع عن هذا الإجراء.`)) {
+      return;
+    }
+    setCancellingId(id);
     try {
-      await createInterest({
-        request_id: id,
-        investor_id: userId,
-        amount,
-        message: "نريد العمل على هذا المشروع",
-      });
-      await queryClient.invalidateQueries({ queryKey: ["my-interests", userId] });
-      toast.success("تم إرسال طلبك", {
-        description: `سيتواصل معك مشرف المنصة بخصوص المشروع ${code}.`,
-      });
+      await cancelMyRequest(id);
+      toast.success("تم إلغاء الطلب");
+      refresh();
     } catch (err) {
-      const message = (err as Error).message;
-      toast.error(
-        message.includes("duplicate") ? "سبق أن أرسلت طلباً لهذا المشروع" : "تعذر إرسال الطلب",
-        { description: message.includes("duplicate") ? undefined : message },
-      );
+      toast.error("تعذر إلغاء الطلب", { description: (err as Error).message });
     } finally {
-      setPending(null);
+      setCancellingId(null);
     }
   };
 
@@ -180,14 +264,30 @@ function RequestsPage() {
                   </div>
                 </dl>
 
-                <Button
-                  variant="gold"
-                  className="mt-5 w-full sm:w-auto"
-                  disabled={pending === o.id}
-                  onClick={() => applyToWork(o.id, Number(o.funding_needed), o.code)}
-                >
-                  {pending === o.id ? "جارٍ الإرسال..." : "نريد العمل على هذا المشروع"}
-                </Button>
+                {editingId === o.id ? (
+                  <EditRequestForm
+                    request={o}
+                    onCancel={() => setEditingId(null)}
+                    onSaved={() => {
+                      setEditingId(null);
+                      refresh();
+                    }}
+                  />
+                ) : (
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Button size="sm" variant="gold" onClick={() => setEditingId(o.id)}>
+                      تعديل الطلب
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={cancellingId === o.id}
+                      onClick={() => cancelRequest(o.id, o.code)}
+                    >
+                      {cancellingId === o.id ? "جارٍ الإلغاء..." : "إلغاء الطلب"}
+                    </Button>
+                  </div>
+                )}
               </article>
             ))}
           </TabsContent>
