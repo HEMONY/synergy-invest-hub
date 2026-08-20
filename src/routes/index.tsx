@@ -54,7 +54,7 @@ function Index() {
             </h1>
             <p className="mt-5 max-w-lg text-base leading-8 text-white/70">
               منصة وساطة عقارية تربط بين أصحاب العقارات التي تريد إعادة تأهيل وترميم، أو
-              أصحاب العقارات التي تريد تشطيب، أو الراغبين في إمتلاك  عقار جديد، بأفضل
+              أصحاب العقارات التي تريد تشطيب، أو الذين يريدون بناء عقار جديد أو الراغبين في إمتلاك  عقار جديد، بأفضل
               شركات القطاع العقاري بالأقساط المريحة — بإشراف كامل من إدارة المنصة.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -98,12 +98,12 @@ function Index() {
 
       <PageHeader
         title="عن منصة سينرجي"
-        subtitle="لو عندك عقار عايز تأهيل وترميم أو عايز تشطيب أو ترغب في امتلاك عقار جديد، في سينرجي نحن نربط بين أصحاب العقارات التي تريد إعادة تأهيل، أو العقارات التي تريد تشطيب، أو الراغبين في إمتلاك عقار جديد، مع أفضل الشركات التي تعمل في مجال القطاع العقاري بنظام الدفع بالأقساط المريحة."
+        subtitle="لو عندك عقار عايز تأهيل وترميم أو عايز تشطيب أو عايز تبني أو ترغب في امتلاك عقار جديد، في سينرجي نحن نربط بين أصحاب العقارات التي تريد إعادة تأهيل، أو العقارات التي تريد تشطيب، أو الراغبين في إمتلاك عقار جديد، مع أفضل الشركات التي تعمل في مجال القطاع العقاري بنظام الدفع بالأقساط المريحة."
       />
 
       <section className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">أحدثالمشاريع العقارية على المنصة.</p>
+          <p className="text-sm text-muted-foreground">أحدث المشاريع العقارية على المنصة.</p>
           <Button asChild variant="outline" size="sm">
             <Link to="/notifications">
               <Bell className="size-4" /> كل الإشعارات
@@ -142,10 +142,7 @@ function Index() {
                 <span className="text-xl font-extrabold text-gold">{o.expected_return}%</span>
               </div>
               <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <dt className="text-xs text-muted-foreground">التمويل المطلوب</dt>
-                  <dd className="font-bold text-gold">{formatSAR(Number(o.funding_needed))}</dd>
-                </div>
+                
                 <div>
                   <dt className="text-xs text-muted-foreground">مدة التنفيذ</dt>
                   <dd className="font-bold">{o.duration_months} أشهر</dd>

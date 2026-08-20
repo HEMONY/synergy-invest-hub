@@ -299,7 +299,7 @@ function UsersSection() {
             <tr key={u.id} className="border-t border-border">
               <td className="p-3 font-semibold">{u.full_name || "بدون اسم"}</td>
               <td className="p-3 text-muted-foreground">
-                {u.account_type === "investor" ? "مستثمر" : "صاحب عقار"}
+                {u.account_type === "investor" ? "شركة عقارية" : "صاحب عقار"}
               </td>
               <td className="p-3">
                 <Badge className={statusStyle[u.verification_status] ?? "bg-muted"}>
@@ -398,7 +398,7 @@ function RequestsSection() {
                   patch: { status: "published", stage_index: Math.max(o.stage_index, 2) },
                   notify: {
                     title: "تم اعتماد ونشر طلبك",
-                    body: `طلبك ${o.code} أصبح متاحاً للمستثمرين في صفحة الفرص.`,
+                    body: `طلبك ${o.code} أصبح متاحاً للشركات العقارية في صفحة الفرص.`,
                   },
                 })
               }
@@ -592,7 +592,7 @@ function ProjectsSection() {
                 })
               }
             >
-              إنهاء المشروع
+              إكتمل المشروع
             </Button>
           </div>
         </article>
@@ -710,15 +710,7 @@ function SettingsSection() {
               onChange={(e) => field("installmentMonths")(e.target.value)}
             />
           </div>
-          <div>
-            <Label className="text-xs">الحد الأدنى للتمويل</Label>
-            <Input
-              className="mt-2"
-              inputMode="numeric"
-              value={settings.minFunding}
-              onChange={(e) => field("minFunding")(e.target.value)}
-            />
-          </div>
+          
         </div>
       </section>
 

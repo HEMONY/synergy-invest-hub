@@ -167,10 +167,7 @@ function RequestsPage() {
                     <dt className="text-xs text-muted-foreground">{costLabel(o.condition)}</dt>
                     <dd className="font-bold">{formatSAR(Number(o.rehab_cost))}</dd>
                   </div>
-                  <div>
-                    <dt className="text-xs text-muted-foreground">التمويل المطلوب</dt>
-                    <dd className="font-bold text-gold">{formatSAR(Number(o.funding_needed))}</dd>
-                  </div>
+                 
                   <div>
                     <dt className="text-xs text-muted-foreground">العائد المتوقع</dt>
                     <dd className="font-bold text-gold">{o.expected_return}%</dd>

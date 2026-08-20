@@ -125,7 +125,7 @@ function OpportunitiesPage() {
       <PageHeader
         back
         title="المشاريع العقارية"
-        subtitle="مشاريع معتمدة من الإدارة — إعادة تأهيل، تشطيب، أو بناء جديد — مع العائد المتوقع لكل مشروع."
+        subtitle="مشاريع معتمدة من الإدارة — إعادة تأهيل وترميم ، تشطيب، أو تملك جديد  — مع العائد المتوقع لكل مشروع."
       />
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 lg:grid-cols-[300px_1fr] lg:px-8">
@@ -144,7 +144,7 @@ function OpportunitiesPage() {
             showFilters ? "" : "hidden"
           }`}
         >
-          <h2 className="text-base font-bold">فلاتر البحث</h2>
+          <h2 className="text-base font-bold"> بحث عن مشروع</h2>
 
           <form
             className="mt-5 space-y-5"
@@ -160,7 +160,7 @@ function OpportunitiesPage() {
                 <Input
                   value={draft.query}
                   onChange={(e) => setField("query", e.target.value)}
-                  placeholder="مثال: ودنوباوي، تشطيب منزل، الخرطوم"
+                  placeholder="مثال: ودنوباوي، تشطيب منزل، امدرمان"
                   className="pr-9"
                 />
               </div>
@@ -217,35 +217,7 @@ function OpportunitiesPage() {
               </Select>
             </div>
 
-            <div>
-              <Label className="text-xs">
-                العائد المتوقع لا يقل عن <span className="text-gold">{draft.minReturn}%</span>
-              </Label>
-              <Slider
-                className="mt-4"
-                value={[draft.minReturn]}
-                min={0}
-                max={40}
-                step={1}
-                onValueChange={(v) => setField("minReturn", v[0] ?? 0)}
-              />
-            </div>
-
             
-
-            <div>
-              <Label className="text-xs">
-                مدة التنفيذ حتى <span className="text-gold">{draft.maxDuration} شهر</span>
-              </Label>
-              <Slider
-                className="mt-4"
-                value={[draft.maxDuration]}
-                min={1}
-                max={36}
-                step={1}
-                onValueChange={(v) => setField("maxDuration", v[0] ?? 1)}
-              />
-            </div>
 
             <div className="flex gap-2">
               <Button type="submit" variant="gold" className="flex-1 gap-2">
@@ -336,12 +308,7 @@ function OpportunitiesPage() {
                         {formatDuration(o.duration_months, o.duration_days)}
                       </dd>
                     </div>
-                    <div>
-                      <dt className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Wallet className="size-3" /> التمويل المطلوب
-                      </dt>
-                      <dd className="font-bold text-gold">{formatSAR(Number(o.funding_needed))}</dd>
-                    </div>
+                    
                     <div>
                       <dt className="text-xs text-muted-foreground">الحالة</dt>
                       <dd className="font-bold">{statusLabels[o.status] ?? o.status}</dd>
