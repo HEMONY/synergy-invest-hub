@@ -21,7 +21,7 @@ export default defineConfig({
         client: { files: ["**/server/**"], specifiers: ["server-only"] },
       },
     }),
-    nitro({ defaultPreset: "cloudflare-module" }),
+    nitro({ defaultPreset: "vercel", inlineDynamicImports: true }),
     viteReact(),
   ],
 });
