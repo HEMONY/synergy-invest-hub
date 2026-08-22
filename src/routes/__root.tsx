@@ -52,13 +52,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           حدث خطأ أثناء تحميل الصفحة
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">يمكنك إعادة المحاولة أو العودة للرئيسية.</p>
-        {/* مؤقت للتشخيص: يعرض نص الخطأ الحقيقي على الصفحة نفسها.
-            احذف هذا الـ <pre> بعد حل المشكلة قبل التسليم النهائي للعميل. */}
-        <pre className="mt-4 max-h-40 overflow-auto rounded-lg bg-muted/50 p-3 text-start text-xs text-destructive" dir="ltr">
-          {error?.message}
-          {"\n"}
-          {error?.stack}
-        </pre>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
