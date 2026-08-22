@@ -1,6 +1,22 @@
 import { Link } from "@tanstack/react-router";
 
 import { Logo } from "@/components/Logo";
+import {
+  FacebookIcon,
+  InstagramIcon,
+  TikTokIcon,
+  WhatsAppIcon,
+  XIcon,
+} from "@/components/SocialIcons";
+
+// TODO: استبدل هذه الروابط بحسابات المنصة الفعلية قبل النشر
+const socialLinks = [
+  { name: "Instagram", href: "https://instagram.com/abdallahidris678", Icon: InstagramIcon },
+  { name: "TikTok", href: "https://www.tiktok.com/@abdallahidris595?_r=1&_t=ZS-994aWre88Ht", Icon: TikTokIcon },
+  { name: "X", href: "https://x.com/AbdallahId325", Icon: XIcon },
+  { name: "Facebook", href: "https://www.facebook.com/abdallah.idris.545", Icon: FacebookIcon },
+  { name: "WhatsApp", href: "https://wa.me/249967807618", Icon: WhatsAppIcon },
+];
 
 export function Footer() {
   return (
@@ -38,6 +54,20 @@ export function Footer() {
             </li>
             <li>الخرطوم-امدرمان-بحري، السودان</li>
           </ul>
+          <div className="mt-4 flex items-center gap-3">
+            {socialLinks.map(({ name, href, Icon }) => (
+              <a
+                key={name}
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={name}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-gold hover:text-gold"
+              >
+                <Icon className="h-4 w-4" />
+              </a>
+            ))}
+          </div>
         </div>
       </div>
       <div className="border-t border-border py-5 text-center text-xs text-muted-foreground">
