@@ -4,18 +4,22 @@ import { Logo } from "@/components/Logo";
 import {
   FacebookIcon,
   InstagramIcon,
+  SnapchatIcon,
   TikTokIcon,
   WhatsAppIcon,
   XIcon,
+  YouTubeIcon,
 } from "@/components/SocialIcons";
 
 // TODO: استبدل هذه الروابط بحسابات المنصة الفعلية قبل النشر
 const socialLinks = [
-  { name: "Instagram", href: "https://instagram.com/abdallahidris678", Icon: InstagramIcon },
-  { name: "TikTok", href: "https://www.tiktok.com/@abdallahidris595?_r=1&_t=ZS-994aWre88Ht", Icon: TikTokIcon },
-  { name: "X", href: "https://x.com/AbdallahId325", Icon: XIcon },
-  { name: "Facebook", href: "https://www.facebook.com/abdallah.idris.545", Icon: FacebookIcon },
+  { name: "Instagram", href: "https://instagram.com/synergy", Icon: InstagramIcon },
+  { name: "TikTok", href: "https://tiktok.com/@synergy", Icon: TikTokIcon },
+  { name: "X", href: "https://x.com/synergy", Icon: XIcon },
+  { name: "Facebook", href: "https://facebook.com/synergy", Icon: FacebookIcon },
   { name: "WhatsApp", href: "https://wa.me/249967807618", Icon: WhatsAppIcon },
+  { name: "Snapchat", href: "https://www.snapchat.com/add/b78341056", Icon: SnapchatIcon },
+  { name: "YouTube", href: "https://www.youtube.com/@AbdallahIdris-p9i", Icon: YouTubeIcon },
 ];
 
 export function Footer() {
