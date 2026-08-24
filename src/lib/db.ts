@@ -31,7 +31,7 @@ export const statusLabels: Record<string, string> = {
 export const conditionLabels: Record<string, string> = {
   damaged: "عقار يحتاج تأهيل وترميم",
   finishing: "عقار يحتاج تشطيب",
-  newbuild: "تملك عقار جديد",
+  newbuild: "بناء عقار جديد",
   // legacy value
   intact: "عقار يحتاج تشطيب",
 };
@@ -39,7 +39,7 @@ export const conditionLabels: Record<string, string> = {
 export const conditionOptions = [
   { key: "damaged", label: "عقار متضرر", hint: "يحتاج تأهيل وترميم" },
   { key: "finishing", label: "عقار غير متضرر", hint: "يحتاج تشطيب" },
-  { key: "newbuild", label: "تملك عقار جديد", hint: "تشييد وبناء عقار جديد" },
+  { key: "newbuild", label: "بناء عقار جديد", hint: "تشييد وبناء عقار جديد" },
   { key: "redevelopment", label: "تمليك عقار جديد", hint: "ارغب في تملك عقار جديد" }
 ] as const;
 
