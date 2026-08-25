@@ -136,7 +136,7 @@ function OpportunitiesPage() {
           onClick={() => setShowFilters((v) => !v)}
         >
           <SlidersHorizontal className="size-4" />
-          {showFilters ? "إخفاء فلاتر البحث" : "فلاتر البحث"}
+          {showFilters ? "إخفاء البحث" : "بحث عن مشروع"}
         </Button>
 
         <aside
