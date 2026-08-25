@@ -33,7 +33,7 @@ export const conditionLabels: Record<string, string> = {
   finishing: "عقار يحتاج تشطيب",
   newbuild: "بناء عقار جديد",
   // legacy value
-  intact: "عقار يحتاج تشطيب",
+  redevelopment: "تمليك عقار جديد",
 };
 
 export const conditionOptions = [
