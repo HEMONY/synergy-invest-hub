@@ -125,7 +125,7 @@ function OpportunitiesPage() {
       <PageHeader
         back
         title="المشاريع العقارية"
-        subtitle="مشاريع معتمدة من الإدارة — إعادة تأهيل وترميم ، تشطيب، أو بناء او تمليك جديد  — مع العائد المتوقع لكل مشروع."
+        subtitle="مشاريع معتمدة من الإدارة — إعادة تأهيل وترميم ، تشطيب، أو بناء، او تمليك جديد  — مع العائد المتوقع لكل مشروع."
       />
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 lg:grid-cols-[300px_1fr] lg:px-8">
