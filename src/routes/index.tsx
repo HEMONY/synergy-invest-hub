@@ -48,7 +48,7 @@ function Index() {
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 lg:grid-cols-2 lg:px-8 lg:py-24">
           <div>
             <h1 className="mt-6 text-3xl leading-[1.45] font-extrabold text-white sm:text-4xl">
-              لو عندك عقار عايز تأهيل وترميم أو عايز تشطيب أو ترغب في إمتلاك عقار جديد وما عندك كاش
+              لو عندك عقار عايز تأهيل وترميم أو عايز تشطيب أو عايز تبني أو ترغب في إمتلاك عقار جديد وما عندك كاش
               <br />
               <span className="text-gold-gradient">الحل مع سينرجي</span>
             </h1>
