@@ -32,8 +32,9 @@ export const conditionLabels: Record<string, string> = {
   damaged: "عقار يحتاج تأهيل وترميم",
   finishing: "عقار يحتاج تشطيب",
   newbuild: "بناء عقار جديد",
-  // legacy value
   redevelopment: "تمليك عقار جديد",
+  // legacy value
+  intact: "عقار يحتاج تشطيب",
 };
 
 export const conditionOptions = [
@@ -81,13 +82,11 @@ export function formatDuration(months: number, days = 0) {
   return parts.length ? parts.join(" و ") : "غير محددة";
 }
 
-/** نسبة إنجاز محسوبة من مرحلة المشروع حتى لو لم تُحدَّث النسبة يدوياً. */
-export function effectiveProgress(progress: number, stageIndex: number) {
-  const fromStage = Math.round(
-    (Math.min(Math.max(stageIndex, 0), projectStages.length - 1) / (projectStages.length - 1)) * 100,
-  );
-  return Math.max(Number(progress) || 0, fromStage);
+/** نسبة الإنجاز الفعلية — تُقرأ من الحقل المُخزَّن مباشرة، بلا تقريب لمراحل ثابتة. */
+export function effectiveProgress(progress: number, _stageIndex: number) {
+  return Math.max(0, Math.min(100, Number(progress) || 0));
 }
+
 
 /** آلية تحصيل عمولة المنصة. */
 export const commissionNote =
