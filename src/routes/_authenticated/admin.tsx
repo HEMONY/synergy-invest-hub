@@ -50,6 +50,7 @@ import {
   hasRole,
   logActivity,
   notifyUser,
+  projectStages,
   reviewDocument,
   statusLabels,
   timeAgo,
@@ -547,7 +548,8 @@ function ProjectsSection() {
                 patch: {
                   progress: next,
                   status: next === 100 ? "completed" : "in_progress",
-                  stage_index: next === 100 ? 6 : Math.max(p.stage_index, 5),
+                  stage_index:
+                    next === 100 ? 6 : Math.round((next / 100) * (projectStages.length - 1)),
                 },
                 notify: {
                   title: "تحديث نسبة الإنجاز",
@@ -567,7 +569,8 @@ function ProjectsSection() {
                   patch: {
                     progress: next,
                     status: next === 100 ? "completed" : "in_progress",
-                    stage_index: next === 100 ? 6 : Math.max(p.stage_index, 5),
+                    stage_index:
+                      next === 100 ? 6 : Math.round((next / 100) * (projectStages.length - 1)),
                   },
                   notify: {
                     title: "تحديث نسبة الإنجاز",
@@ -1010,4 +1013,4 @@ function ActivitySection() {
       </section>
     </div>
   );
-}//
+}
