@@ -178,6 +178,33 @@ export async function updateMyRequest(id: string, patch: Partial<NewRequestInput
   if (error) throw error;
 }
 
+/** الجملة التعريفية الافتراضية المعروضة على الصفحة الرئيسية لو لم يحدّدها الأدمن. */
+export const defaultSiteTagline =
+  "لو عندك عقار عايز تأهيل وترميم أو عايز تشطيب أو ترغب في إمتلاك عقار جديد وما عندك كاش";
+
+export async function fetchSiteTagline() {
+  const { data, error } = await supabase
+    .from("platform_settings")
+    .select("value")
+    .eq("key", "site_tagline")
+    .maybeSingle();
+  if (error) throw error;
+  return data?.value || defaultSiteTagline;
+}
+
+export async function saveSiteTagline(value: string, userId: string) {
+  const { error } = await supabase
+    .from("platform_settings")
+    .upsert({ key: "site_tagline", value, updated_by: userId, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
+
+/** حذف التخصيص والرجوع للجملة الافتراضية. */
+export async function resetSiteTagline() {
+  const { error } = await supabase.from("platform_settings").delete().eq("key", "site_tagline");
+  if (error) throw error;
+}
+
 export async function cancelMyRequest(id: string) {
   const { error } = await supabase.from("property_requests").delete().eq("id", id);
   if (error) throw error;
