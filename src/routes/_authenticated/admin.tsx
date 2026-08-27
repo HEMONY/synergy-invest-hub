@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import {
   activityActions,
@@ -40,17 +41,21 @@ import {
   conditionLabels,
   docTypeLabels,
   documentUrl,
+  defaultSiteTagline,
   effectiveProgress,
   fetchActivityLogs,
   fetchAllDocuments,
   fetchAllInterests,
   fetchAllProfiles,
   fetchAllRequests,
+  fetchSiteTagline,
   formatSAR,
   hasRole,
   logActivity,
   notifyUser,
   reviewDocument,
+  resetSiteTagline,
+  saveSiteTagline,
   statusLabels,
   timeAgo,
   updateInterest,
@@ -655,6 +660,73 @@ function ProgressControl({ value, onSave }: { value: number; onSave: (n: number)
   );
 }
 
+function SiteTaglineSettings() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: tagline } = useQuery({
+    queryKey: ["site-tagline"],
+    queryFn: fetchSiteTagline,
+  });
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (tagline !== undefined) setDraft(tagline);
+  }, [tagline]);
+
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["site-tagline"] });
+
+  const save = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      await saveSiteTagline(draft.trim(), user.id);
+      toast.success("تم تحديث الجملة التعريفية");
+      refresh();
+    } catch (err) {
+      toast.error("تعذر الحفظ", { description: (err as Error).message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const reset = async () => {
+    setSaving(true);
+    try {
+      await resetSiteTagline();
+      toast.success("تم حذف التخصيص — رجعت الجملة الافتراضية");
+      refresh();
+    } catch (err) {
+      toast.error("تعذر الحذف", { description: (err as Error).message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="card-surface p-6">
+      <h3 className="text-base font-bold">الجملة التعريفية للصفحة الرئيسية</h3>
+      <p className="mt-1 text-xs text-muted-foreground">
+        الجملة الكبيرة الظاهرة أعلى الصفحة الرئيسية للموقع (قبل عبارة "الحل مع سينرجي" الثابتة).
+      </p>
+      <Textarea
+        className="mt-4 min-h-24"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder={defaultSiteTagline}
+      />
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button size="sm" variant="gold" disabled={saving} onClick={save}>
+          حفظ
+        </Button>
+        <Button size="sm" variant="outline" disabled={saving} onClick={reset}>
+          حذف (الرجوع للافتراضي)
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 const settingsKey = "synergy-admin-settings";
 
 function SettingsSection() {
@@ -688,6 +760,7 @@ function SettingsSection() {
 
   return (
     <div className="space-y-6">
+      <SiteTaglineSettings />
       <section className="card-surface p-6">
         <h3 className="text-base font-bold">إعدادات العمولة والسداد</h3>
         <p className="mt-1 text-xs text-muted-foreground">{commissionNote}</p>
