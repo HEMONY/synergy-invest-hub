@@ -19,7 +19,7 @@ const socialLinks = [
   { name: "Facebook", href: "https://www.facebook.com/abdallah.idris.545", Icon: FacebookIcon },
   { name: "WhatsApp", href: "https://wa.me/249967807618", Icon: WhatsAppIcon },
   { name: "Snapchat", href: "https://www.snapchat.com/add/b78341056", Icon: SnapchatIcon },
-  { name: "YouTube", href: "https://www.youtube.com/@AbdallahIdris-k1e", Icon: YouTubeIcon },
+  { name: "YouTube", href: "https://www.youtube.com/@AbdallahIdris-z7c", Icon: YouTubeIcon },
 ];
 
 export function Footer() {
