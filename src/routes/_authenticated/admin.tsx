@@ -43,6 +43,9 @@ import {
   documentUrl,
   defaultSiteTagline,
   defaultSiteSubtitle,
+  defaultAboutTitle,
+  defaultAboutText,
+  defaultFooterText,
   effectiveProgress,
   fetchActivityLogs,
   fetchAllDocuments,
@@ -51,6 +54,9 @@ import {
   fetchAllRequests,
   fetchSiteTagline,
   fetchSiteSubtitle,
+  fetchAboutTitle,
+  fetchAboutText,
+  fetchFooterText,
   formatSAR,
   hasRole,
   logActivity,
@@ -58,8 +64,14 @@ import {
   reviewDocument,
   resetSiteTagline,
   resetSiteSubtitle,
+  resetAboutTitle,
+  resetAboutText,
+  resetFooterText,
   saveSiteTagline,
   saveSiteSubtitle,
+  saveAboutTitle,
+  saveAboutText,
+  saveFooterText,
   statusLabels,
   timeAgo,
   updateInterest,
@@ -407,7 +419,7 @@ function RequestsSection() {
                   patch: { status: "published", stage_index: Math.max(o.stage_index, 2) },
                   notify: {
                     title: "تم اعتماد ونشر طلبك",
-                    body: `طلبك ${o.code} أصبح متاحاً للشركات العقارية في صفحة المشاريع العقارية.`,
+                    body: `طلبك ${o.code} أصبح متاحاً للشركات العقارية في صفحة المشارع العقارية .`,
                   },
                 })
               }
@@ -664,39 +676,41 @@ function ProgressControl({ value, onSave }: { value: number; onSave: (n: number)
   );
 }
 
-function SiteTaglineSettings() {
-  const { user } = useAuth();
+function TextSettingField({
+  label,
+  hint,
+  fetcher,
+  queryKey,
+  onSave,
+  onReset,
+  placeholder,
+  minHeight = "min-h-24",
+}: {
+  label: string;
+  hint: string;
+  fetcher: () => Promise<string>;
+  queryKey: string;
+  onSave: (value: string) => Promise<void>;
+  onReset: () => Promise<void>;
+  placeholder: string;
+  minHeight?: string;
+}) {
   const queryClient = useQueryClient();
-  const { data: tagline } = useQuery({
-    queryKey: ["site-tagline"],
-    queryFn: fetchSiteTagline,
-  });
-  const { data: subtitle } = useQuery({
-    queryKey: ["site-subtitle"],
-    queryFn: fetchSiteSubtitle,
-  });
-  const [taglineDraft, setTaglineDraft] = useState("");
-  const [subtitleDraft, setSubtitleDraft] = useState("");
+  const { data } = useQuery({ queryKey: [queryKey], queryFn: fetcher });
+  const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (tagline !== undefined) setTaglineDraft(tagline);
-  }, [tagline]);
-  useEffect(() => {
-    if (subtitle !== undefined) setSubtitleDraft(subtitle);
-  }, [subtitle]);
+    if (data !== undefined) setDraft(data);
+  }, [data]);
 
-  const refresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["site-tagline"] });
-    queryClient.invalidateQueries({ queryKey: ["site-subtitle"] });
-  };
+  const refresh = () => queryClient.invalidateQueries({ queryKey: [queryKey] });
 
-  const saveTagline = async () => {
-    if (!user) return;
+  const save = async () => {
     setSaving(true);
     try {
-      await saveSiteTagline(taglineDraft.trim(), user.id);
-      toast.success("تم تحديث الجملة الرئيسية");
+      await onSave(draft.trim());
+      toast.success("تم الحفظ");
       refresh();
     } catch (err) {
       toast.error("تعذر الحفظ", { description: (err as Error).message });
@@ -705,38 +719,11 @@ function SiteTaglineSettings() {
     }
   };
 
-  const resetTagline = async () => {
+  const reset = async () => {
     setSaving(true);
     try {
-      await resetSiteTagline();
-      toast.success("تم حذف التخصيص — رجعت الجملة الافتراضية");
-      refresh();
-    } catch (err) {
-      toast.error("تعذر الحذف", { description: (err as Error).message });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const saveSubtitle = async () => {
-    if (!user) return;
-    setSaving(true);
-    try {
-      await saveSiteSubtitle(subtitleDraft.trim(), user.id);
-      toast.success("تم تحديث الفقرة التعريفية");
-      refresh();
-    } catch (err) {
-      toast.error("تعذر الحفظ", { description: (err as Error).message });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const resetSubtitle = async () => {
-    setSaving(true);
-    try {
-      await resetSiteSubtitle();
-      toast.success("تم حذف التخصيص — رجعت الفقرة الافتراضية");
+      await onReset();
+      toast.success("تم حذف التخصيص — رجع النص الافتراضي");
       refresh();
     } catch (err) {
       toast.error("تعذر الحذف", { description: (err as Error).message });
@@ -746,47 +733,92 @@ function SiteTaglineSettings() {
   };
 
   return (
+    <div>
+      <h3 className="text-base font-bold">{label}</h3>
+      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+      <Textarea
+        className={`mt-4 ${minHeight}`}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder={placeholder}
+      />
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button size="sm" variant="gold" disabled={saving} onClick={save}>
+          حفظ
+        </Button>
+        <Button size="sm" variant="outline" disabled={saving} onClick={reset}>
+          حذف (الرجوع للافتراضي)
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function SiteTaglineSettings() {
+  const { user } = useAuth();
+  if (!user) return null;
+
+  return (
     <section className="card-surface space-y-6 p-6">
-      <div>
-        <h3 className="text-base font-bold">الجملة التعريفية للصفحة الرئيسية</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          الجملة الكبيرة الظاهرة أعلى الصفحة الرئيسية للموقع (قبل عبارة "الحل مع سينرجي" الثابتة).
-        </p>
-        <Textarea
-          className="mt-4 min-h-24"
-          value={taglineDraft}
-          onChange={(e) => setTaglineDraft(e.target.value)}
-          placeholder={defaultSiteTagline}
+      <TextSettingField
+        label="الجملة التعريفية للصفحة الرئيسية"
+        hint='الجملة الكبيرة الظاهرة أعلى الصفحة الرئيسية للموقع (قبل عبارة "الحل مع سينرجي" الثابتة).'
+        queryKey="site-tagline"
+        fetcher={fetchSiteTagline}
+        onSave={(v) => saveSiteTagline(v, user.id)}
+        onReset={resetSiteTagline}
+        placeholder={defaultSiteTagline}
+      />
+
+      <div className="border-t border-border pt-6">
+        <TextSettingField
+          label="الفقرة التعريفية أسفل الجملة الرئيسية"
+          hint="الفقرة الأصغر التي تشرح المنصة أسفل العنوان الرئيسي مباشرة."
+          queryKey="site-subtitle"
+          fetcher={fetchSiteSubtitle}
+          onSave={(v) => saveSiteSubtitle(v, user.id)}
+          onReset={resetSiteSubtitle}
+          placeholder={defaultSiteSubtitle}
+          minHeight="min-h-32"
         />
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button size="sm" variant="gold" disabled={saving} onClick={saveTagline}>
-            حفظ
-          </Button>
-          <Button size="sm" variant="outline" disabled={saving} onClick={resetTagline}>
-            حذف (الرجوع للافتراضي)
-          </Button>
-        </div>
       </div>
 
       <div className="border-t border-border pt-6">
-        <h3 className="text-base font-bold">الفقرة التعريفية أسفل الجملة الرئيسية</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          الفقرة الأصغر التي تشرح المنصة أسفل العنوان الرئيسي مباشرة.
-        </p>
-        <Textarea
-          className="mt-4 min-h-32"
-          value={subtitleDraft}
-          onChange={(e) => setSubtitleDraft(e.target.value)}
-          placeholder={defaultSiteSubtitle}
+        <TextSettingField
+          label='عنوان قسم "عن منصة سينرجي'
+          hint="العنوان الظاهر أعلى قسم عن المنصة في الصفحة الرئيسية."
+          queryKey="about-title"
+          fetcher={fetchAboutTitle}
+          onSave={(v) => saveAboutTitle(v, user.id)}
+          onReset={resetAboutTitle}
+          placeholder={defaultAboutTitle}
         />
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button size="sm" variant="gold" disabled={saving} onClick={saveSubtitle}>
-            حفظ
-          </Button>
-          <Button size="sm" variant="outline" disabled={saving} onClick={resetSubtitle}>
-            حذف (الرجوع للافتراضي)
-          </Button>
-        </div>
+      </div>
+
+      <div className="border-t border-border pt-6">
+        <TextSettingField
+          label='فقرة قسم "عن منصة سينرجي'
+          hint="النص التوضيحي أسفل عنوان قسم عن المنصة."
+          queryKey="about-text"
+          fetcher={fetchAboutText}
+          onSave={(v) => saveAboutText(v, user.id)}
+          onReset={resetAboutText}
+          placeholder={defaultAboutText}
+          minHeight="min-h-32"
+        />
+      </div>
+
+      <div className="border-t border-border pt-6">
+        <TextSettingField
+          label="فقرة الوصف في الفوتر"
+          hint="النص الظاهر أسفل الشعار في تذييل الموقع (الفوتر)."
+          queryKey="footer-text"
+          fetcher={fetchFooterText}
+          onSave={(v) => saveFooterText(v, user.id)}
+          onReset={resetFooterText}
+          placeholder={defaultFooterText}
+          minHeight="min-h-24"
+        />
       </div>
     </section>
   );
