@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 
 import { Logo } from "@/components/Logo";
+import { defaultFooterText, fetchFooterText } from "@/lib/db";
 import {
   FacebookIcon,
   InstagramIcon,
@@ -23,13 +25,18 @@ const socialLinks = [
 ];
 
 export function Footer() {
+  const { data: footerText } = useQuery({
+    queryKey: ["footer-text"],
+    queryFn: fetchFooterText,
+  });
+
   return (
     <footer className="mt-20 border-t border-border bg-card/60">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div>
           <Logo size={48} />
-          <p className="mt-4 text-sm leading-7 text-muted-foreground">منصة وساطة عقارية تربط أصحاب العقارات التي تريد تأهيل وترميم أو تشطيب أو بناء أو الراغبين في إمتلاك عقار جديد مع أفضل شركات القطاع العقاري ، بإشراف كامل من إدارة المنصة
-
+          <p className="mt-4 text-sm leading-7 text-muted-foreground">
+            {footerText ?? defaultFooterText}
           </p>
         </div>
         <div>
