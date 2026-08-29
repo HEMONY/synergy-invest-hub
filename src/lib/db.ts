@@ -220,6 +220,32 @@ export const saveSiteSubtitle = (value: string, userId: string) =>
 /** حذف التخصيص والرجوع للفقرة الافتراضية. */
 export const resetSiteSubtitle = () => resetSetting("site_subtitle");
 
+/** فقرة الوصف الافتراضية في الفوتر (تحت الشعار). */
+export const defaultFooterText =
+  "منصة وساطة عقارية تربط أصحاب العقارات التي تريد تأهيل وترميم أو تشطيب أو بناء أو الراغبين في إمتلاك عقار جديد مع أفضل شركات القطاع العقاري ، بإشراف كامل من إدارة المنصة";
+
+export const fetchFooterText = () => fetchSetting("footer_text", defaultFooterText);
+export const saveFooterText = (value: string, userId: string) =>
+  saveSetting("footer_text", value, userId);
+/** حذف التخصيص والرجوع لفقرة الفوتر الافتراضية. */
+export const resetFooterText = () => resetSetting("footer_text");
+
+/** عنوان وفقرة قسم "عن منصة سينرجي" في الصفحة الرئيسية. */
+export const defaultAboutTitle = "عن منصة سينرجي";
+export const defaultAboutText =
+  "لو عندك عقار عايز تأهيل وترميم أو عايز تشطيب أو عايز تبني أو ترغب في امتلاك عقار جديد، في سينرجي نحن نربط بين أصحاب العقارات التي تريد إعادة تأهيل، أو العقارات التي تريد تشطيب، أو الراغبين في إمتلاك عقار جديد، مع أفضل الشركات التي تعمل في مجال القطاع العقاري بنظام الدفع بالأقساط المريحة.";
+
+export const fetchAboutTitle = () => fetchSetting("about_title", defaultAboutTitle);
+export const saveAboutTitle = (value: string, userId: string) =>
+  saveSetting("about_title", value, userId);
+export const resetAboutTitle = () => resetSetting("about_title");
+
+export const fetchAboutText = () => fetchSetting("about_text", defaultAboutText);
+export const saveAboutText = (value: string, userId: string) =>
+  saveSetting("about_text", value, userId);
+/** حذف التخصيص والرجوع لنص القسم الافتراضي. */
+export const resetAboutText = () => resetSetting("about_text");
+
 export async function cancelMyRequest(id: string) {
   const { error } = await supabase.from("property_requests").delete().eq("id", id);
   if (error) throw error;
