@@ -403,7 +403,7 @@ function RequestsSection() {
                   patch: { status: "published", stage_index: Math.max(o.stage_index, 2) },
                   notify: {
                     title: "تم اعتماد ونشر طلبك",
-                    body: `طلبك ${o.code} أصبح متاحاً للشركات العقارية في صفحة الفرص.`,
+                    body: `طلبك ${o.code} أصبح متاحاً للشركات العقارية في صفحة المشاريع العقارية.`,
                   },
                 })
               }
