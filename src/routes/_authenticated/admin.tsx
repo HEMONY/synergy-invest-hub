@@ -42,6 +42,7 @@ import {
   docTypeLabels,
   documentUrl,
   defaultSiteTagline,
+  defaultSiteSubtitle,
   effectiveProgress,
   fetchActivityLogs,
   fetchAllDocuments,
@@ -49,13 +50,16 @@ import {
   fetchAllProfiles,
   fetchAllRequests,
   fetchSiteTagline,
+  fetchSiteSubtitle,
   formatSAR,
   hasRole,
   logActivity,
   notifyUser,
   reviewDocument,
   resetSiteTagline,
+  resetSiteSubtitle,
   saveSiteTagline,
+  saveSiteSubtitle,
   statusLabels,
   timeAgo,
   updateInterest,
@@ -667,21 +671,32 @@ function SiteTaglineSettings() {
     queryKey: ["site-tagline"],
     queryFn: fetchSiteTagline,
   });
-  const [draft, setDraft] = useState("");
+  const { data: subtitle } = useQuery({
+    queryKey: ["site-subtitle"],
+    queryFn: fetchSiteSubtitle,
+  });
+  const [taglineDraft, setTaglineDraft] = useState("");
+  const [subtitleDraft, setSubtitleDraft] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (tagline !== undefined) setDraft(tagline);
+    if (tagline !== undefined) setTaglineDraft(tagline);
   }, [tagline]);
+  useEffect(() => {
+    if (subtitle !== undefined) setSubtitleDraft(subtitle);
+  }, [subtitle]);
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["site-tagline"] });
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["site-tagline"] });
+    queryClient.invalidateQueries({ queryKey: ["site-subtitle"] });
+  };
 
-  const save = async () => {
+  const saveTagline = async () => {
     if (!user) return;
     setSaving(true);
     try {
-      await saveSiteTagline(draft.trim(), user.id);
-      toast.success("تم تحديث الجملة التعريفية");
+      await saveSiteTagline(taglineDraft.trim(), user.id);
+      toast.success("تم تحديث الجملة الرئيسية");
       refresh();
     } catch (err) {
       toast.error("تعذر الحفظ", { description: (err as Error).message });
@@ -690,7 +705,7 @@ function SiteTaglineSettings() {
     }
   };
 
-  const reset = async () => {
+  const resetTagline = async () => {
     setSaving(true);
     try {
       await resetSiteTagline();
@@ -703,25 +718,75 @@ function SiteTaglineSettings() {
     }
   };
 
+  const saveSubtitle = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      await saveSiteSubtitle(subtitleDraft.trim(), user.id);
+      toast.success("تم تحديث الفقرة التعريفية");
+      refresh();
+    } catch (err) {
+      toast.error("تعذر الحفظ", { description: (err as Error).message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetSubtitle = async () => {
+    setSaving(true);
+    try {
+      await resetSiteSubtitle();
+      toast.success("تم حذف التخصيص — رجعت الفقرة الافتراضية");
+      refresh();
+    } catch (err) {
+      toast.error("تعذر الحذف", { description: (err as Error).message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <section className="card-surface p-6">
-      <h3 className="text-base font-bold">الجملة التعريفية للصفحة الرئيسية</h3>
-      <p className="mt-1 text-xs text-muted-foreground">
-        الجملة الكبيرة الظاهرة أعلى الصفحة الرئيسية للموقع (قبل عبارة "الحل مع سينرجي" الثابتة).
-      </p>
-      <Textarea
-        className="mt-4 min-h-24"
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        placeholder={defaultSiteTagline}
-      />
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button size="sm" variant="gold" disabled={saving} onClick={save}>
-          حفظ
-        </Button>
-        <Button size="sm" variant="outline" disabled={saving} onClick={reset}>
-          حذف (الرجوع للافتراضي)
-        </Button>
+    <section className="card-surface space-y-6 p-6">
+      <div>
+        <h3 className="text-base font-bold">الجملة التعريفية للصفحة الرئيسية</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          الجملة الكبيرة الظاهرة أعلى الصفحة الرئيسية للموقع (قبل عبارة "الحل مع سينرجي" الثابتة).
+        </p>
+        <Textarea
+          className="mt-4 min-h-24"
+          value={taglineDraft}
+          onChange={(e) => setTaglineDraft(e.target.value)}
+          placeholder={defaultSiteTagline}
+        />
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button size="sm" variant="gold" disabled={saving} onClick={saveTagline}>
+            حفظ
+          </Button>
+          <Button size="sm" variant="outline" disabled={saving} onClick={resetTagline}>
+            حذف (الرجوع للافتراضي)
+          </Button>
+        </div>
+      </div>
+
+      <div className="border-t border-border pt-6">
+        <h3 className="text-base font-bold">الفقرة التعريفية أسفل الجملة الرئيسية</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          الفقرة الأصغر التي تشرح المنصة أسفل العنوان الرئيسي مباشرة.
+        </p>
+        <Textarea
+          className="mt-4 min-h-32"
+          value={subtitleDraft}
+          onChange={(e) => setSubtitleDraft(e.target.value)}
+          placeholder={defaultSiteSubtitle}
+        />
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button size="sm" variant="gold" disabled={saving} onClick={saveSubtitle}>
+            حفظ
+          </Button>
+          <Button size="sm" variant="outline" disabled={saving} onClick={resetSubtitle}>
+            حذف (الرجوع للافتراضي)
+          </Button>
+        </div>
       </div>
     </section>
   );
@@ -913,6 +978,43 @@ function DocumentsSection() {
 
 /* ---------- المدفوعات والعمولات ---------- */
 
+function FundingCell({ id, value }: { id: string; value: number }) {
+  const queryClient = useQueryClient();
+  const [draft, setDraft] = useState(String(value || 0));
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setDraft(String(value || 0));
+  }, [value]);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await updateRequest(id, { funding_needed: Number(draft) || 0 });
+      await queryClient.invalidateQueries({ queryKey: ["admin-requests"] });
+      toast.success("تم تحديث قيمة التمويل");
+    } catch (err) {
+      toast.error("تعذر التحديث", { description: (err as Error).message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        className="h-8 w-28"
+        inputMode="numeric"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+      />
+      <Button size="sm" variant="outline" className="h-8 px-2" disabled={saving} onClick={save}>
+        حفظ
+      </Button>
+    </div>
+  );
+}
+
 function PaymentsSection() {
   const { data: requests = [] } = useRequests();
   const [rate, setRate] = useState(() => {
@@ -969,7 +1071,9 @@ function PaymentsSection() {
               return (
                 <tr key={r.id} className="border-t border-border">
                   <td className="py-3">{r.title || r.code}</td>
-                  <td className="py-3">{formatSAR(Number(r.funding_needed))}</td>
+                  <td className="py-3">
+                    <FundingCell id={r.id} value={Number(r.funding_needed)} />
+                  </td>
                   <td className="py-3">{formatSAR(commission)}</td>
                   <td className="py-3">{formatSAR(commission / months)}</td>
                 </tr>
