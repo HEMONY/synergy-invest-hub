@@ -5,7 +5,7 @@ import heroImage from "@/assets/hero-property.jpg";
 import { PageHeader, SiteLayout } from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { conditionLabels, fetchOpportunities, fetchSiteTagline, formatSAR } from "@/lib/db";
+import { conditionLabels, fetchOpportunities, fetchSiteTagline, fetchSiteSubtitle, fetchAboutTitle, fetchAboutText, formatSAR } from "@/lib/db";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -44,6 +44,18 @@ function Index() {
     queryKey: ["site-tagline"],
     queryFn: fetchSiteTagline,
   });
+  const { data: subtitle } = useQuery({
+    queryKey: ["site-subtitle"],
+    queryFn: fetchSiteSubtitle,
+  });
+  const { data: aboutTitle } = useQuery({
+    queryKey: ["about-title"],
+    queryFn: fetchAboutTitle,
+  });
+  const { data: aboutText } = useQuery({
+    queryKey: ["about-text"],
+    queryFn: fetchAboutText,
+  });
   const featured = rows.slice(0, 3);
 
   return (
@@ -57,9 +69,8 @@ function Index() {
               <span className="text-gold-gradient">الحل مع سينرجي</span>
             </h1>
             <p className="mt-5 max-w-lg text-base leading-8 text-white/70">
-              منصة وساطة عقارية تربط بين أصحاب العقارات التي تريد إعادة تأهيل وترميم، أو
-              أصحاب العقارات التي تريد تشطيب، أو الذين يريدون بناء عقار جديد أو الراغبين في إمتلاك  عقار جديد، بأفضل
-              شركات القطاع العقاري بالأقساط المريحة — بإشراف كامل من إدارة المنصة.
+              {subtitle ??
+                "منصة وساطة عقارية تربط بين أصحاب العقارات التي تريد إعادة تأهيل وترميم، أو أصحاب العقارات التي تريد تشطيب، أو الذين يريدون بناء عقار جديد أو الراغبين في إمتلاك عقار جديد، بأفضل شركات القطاع العقاري بالأقساط المريحة — بإشراف كامل من إدارة المنصة."}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild variant="gold" size="lg">
@@ -101,8 +112,11 @@ function Index() {
       </section>
 
       <PageHeader
-        title="عن منصة سينرجي"
-        subtitle="لو عندك عقار عايز تأهيل وترميم أو عايز تشطيب أو عايز تبني أو ترغب في امتلاك عقار جديد، في سينرجي نحن نربط بين أصحاب العقارات التي تريد إعادة تأهيل، أو العقارات التي تريد تشطيب، أو الراغبين في إمتلاك عقار جديد، مع أفضل الشركات التي تعمل في مجال القطاع العقاري بنظام الدفع بالأقساط المريحة."
+        title={aboutTitle ?? "عن منصة سينرجي"}
+        subtitle={
+          aboutText ??
+          "لو عندك عقار عايز تأهيل وترميم أو عايز تشطيب أو عايز تبني أو ترغب في امتلاك عقار جديد، في سينرجي نحن نربط بين أصحاب العقارات التي تريد إعادة تأهيل، أو العقارات التي تريد تشطيب، أو الراغبين في إمتلاك عقار جديد، مع أفضل الشركات التي تعمل في مجال القطاع العقاري بنظام الدفع بالأقساط المريحة."
+        }
       />
 
       <section className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
