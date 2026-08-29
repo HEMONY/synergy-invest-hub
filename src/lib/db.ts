@@ -182,28 +182,43 @@ export async function updateMyRequest(id: string, patch: Partial<NewRequestInput
 export const defaultSiteTagline =
   "لو عندك عقار عايز تأهيل وترميم أو عايز تشطيب أو ترغب في إمتلاك عقار جديد وما عندك كاش";
 
-export async function fetchSiteTagline() {
+/** الفقرة التعريفية الافتراضية أسفل الجملة الرئيسية. */
+export const defaultSiteSubtitle =
+  "منصة وساطة عقارية تربط بين أصحاب العقارات التي تريد إعادة تأهيل وترميم، أو أصحاب العقارات التي تريد تشطيب، أو الذين يريدون بناء عقار جديد أو الراغبين في إمتلاك عقار جديد، بأفضل شركات القطاع العقاري بالأقساط المريحة — بإشراف كامل من إدارة المنصة.";
+
+async function fetchSetting(key: string, fallback: string) {
   const { data, error } = await supabase
     .from("platform_settings")
     .select("value")
-    .eq("key", "site_tagline")
+    .eq("key", key)
     .maybeSingle();
   if (error) throw error;
-  return data?.value || defaultSiteTagline;
+  return data?.value || fallback;
 }
 
-export async function saveSiteTagline(value: string, userId: string) {
+async function saveSetting(key: string, value: string, userId: string) {
   const { error } = await supabase
     .from("platform_settings")
-    .upsert({ key: "site_tagline", value, updated_by: userId, updated_at: new Date().toISOString() });
+    .upsert({ key, value, updated_by: userId, updated_at: new Date().toISOString() });
   if (error) throw error;
 }
 
-/** حذف التخصيص والرجوع للجملة الافتراضية. */
-export async function resetSiteTagline() {
-  const { error } = await supabase.from("platform_settings").delete().eq("key", "site_tagline");
+async function resetSetting(key: string) {
+  const { error } = await supabase.from("platform_settings").delete().eq("key", key);
   if (error) throw error;
 }
+
+export const fetchSiteTagline = () => fetchSetting("site_tagline", defaultSiteTagline);
+export const saveSiteTagline = (value: string, userId: string) =>
+  saveSetting("site_tagline", value, userId);
+/** حذف التخصيص والرجوع للجملة الافتراضية. */
+export const resetSiteTagline = () => resetSetting("site_tagline");
+
+export const fetchSiteSubtitle = () => fetchSetting("site_subtitle", defaultSiteSubtitle);
+export const saveSiteSubtitle = (value: string, userId: string) =>
+  saveSetting("site_subtitle", value, userId);
+/** حذف التخصيص والرجوع للفقرة الافتراضية. */
+export const resetSiteSubtitle = () => resetSetting("site_subtitle");
 
 export async function cancelMyRequest(id: string) {
   const { error } = await supabase.from("property_requests").delete().eq("id", id);
@@ -387,7 +402,7 @@ export async function fetchAllInterests() {
 
 export async function updateRequest(
   id: string,
-  patch: Partial<{ status: string; stage_index: number; progress: number }>,
+  patch: Partial<{ status: string; stage_index: number; progress: number; funding_needed: number }>,
 ) {
   const { error } = await supabase.from("property_requests").update(patch).eq("id", id);
   if (error) throw error;
