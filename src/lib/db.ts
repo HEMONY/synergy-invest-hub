@@ -44,6 +44,31 @@ export const conditionOptions = [
   { key: "redevelopment", label: "تمليك عقار جديد", hint: "ارغب في تملك عقار جديد" }
 ] as const;
 
+export type ConditionOptionTexts = Record<string, { label: string; hint: string }>;
+
+/** القيم الافتراضية لعناوين ووصف بطاقات "حالة العقار" — تُستخدم كـ placeholder ولو لم يوجد تخصيص. */
+export const defaultConditionOptionTexts: ConditionOptionTexts = Object.fromEntries(
+  conditionOptions.map((c) => [c.key, { label: c.label, hint: c.hint }]),
+);
+
+/** جلب نصوص بطاقات "حالة العقار" مع دمج أي تخصيص محفوظ من لوحة الإدارة فوق الافتراضي. */
+export async function fetchConditionOptionTexts(): Promise<ConditionOptionTexts> {
+  const raw = await fetchSetting("condition_options_texts", "");
+  if (!raw) return defaultConditionOptionTexts;
+  try {
+    return { ...defaultConditionOptionTexts, ...(JSON.parse(raw) as ConditionOptionTexts) };
+  } catch {
+    return defaultConditionOptionTexts;
+  }
+}
+
+export async function saveConditionOptionTexts(value: ConditionOptionTexts, userId: string) {
+  await saveSetting("condition_options_texts", JSON.stringify(value), userId);
+}
+
+/** حذف كل التخصيصات والرجوع للنصوص الافتراضية. */
+export const resetConditionOptionTexts = () => resetSetting("condition_options_texts");
+
 export type ConditionKey = (typeof conditionOptions)[number]["key"];
 
 export const costLabel = (condition: string) =>
