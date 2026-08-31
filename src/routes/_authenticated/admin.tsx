@@ -46,6 +46,10 @@ import {
   defaultAboutTitle,
   defaultAboutText,
   defaultFooterText,
+  defaultNewRequestTitle,
+  defaultNewRequestSubtitle,
+  defaultOpportunitiesTitle,
+  defaultOpportunitiesSubtitle,
   effectiveProgress,
   fetchActivityLogs,
   fetchAllDocuments,
@@ -57,6 +61,10 @@ import {
   fetchAboutTitle,
   fetchAboutText,
   fetchFooterText,
+  fetchNewRequestTitle,
+  fetchNewRequestSubtitle,
+  fetchOpportunitiesTitle,
+  fetchOpportunitiesSubtitle,
   formatSAR,
   hasRole,
   logActivity,
@@ -67,11 +75,19 @@ import {
   resetAboutTitle,
   resetAboutText,
   resetFooterText,
+  resetNewRequestTitle,
+  resetNewRequestSubtitle,
+  resetOpportunitiesTitle,
+  resetOpportunitiesSubtitle,
   saveSiteTagline,
   saveSiteSubtitle,
   saveAboutTitle,
   saveAboutText,
   saveFooterText,
+  saveNewRequestTitle,
+  saveNewRequestSubtitle,
+  saveOpportunitiesTitle,
+  saveOpportunitiesSubtitle,
   statusLabels,
   timeAgo,
   updateInterest,
@@ -419,7 +435,7 @@ function RequestsSection() {
                   patch: { status: "published", stage_index: Math.max(o.stage_index, 2) },
                   notify: {
                     title: "تم اعتماد ونشر طلبك",
-                    body: `طلبك ${o.code} أصبح متاحاً للشركات العقارية في صفحة المشارع العقارية .`,
+                    body: `طلبك ${o.code} أصبح متاحاً للشركات العقارية في صفحة الفرص.`,
                   },
                 })
               }
@@ -818,6 +834,54 @@ function SiteTaglineSettings() {
           onReset={resetFooterText}
           placeholder={defaultFooterText}
           minHeight="min-h-24"
+        />
+      </div>
+
+      <div className="border-t border-border pt-6">
+        <TextSettingField
+          label='عنوان صفحة "إضافة عقار"'
+          hint="العنوان الظاهر أعلى صفحة إضافة عقار جديد."
+          queryKey="new-request-title"
+          fetcher={fetchNewRequestTitle}
+          onSave={(v) => saveNewRequestTitle(v, user.id)}
+          onReset={resetNewRequestTitle}
+          placeholder={defaultNewRequestTitle}
+        />
+      </div>
+
+      <div className="border-t border-border pt-6">
+        <TextSettingField
+          label='فقرة صفحة "إضافة عقار"'
+          hint="النص التوضيحي أسفل عنوان صفحة إضافة عقار جديد."
+          queryKey="new-request-subtitle"
+          fetcher={fetchNewRequestSubtitle}
+          onSave={(v) => saveNewRequestSubtitle(v, user.id)}
+          onReset={resetNewRequestSubtitle}
+          placeholder={defaultNewRequestSubtitle}
+        />
+      </div>
+
+      <div className="border-t border-border pt-6">
+        <TextSettingField
+          label='عنوان صفحة "المشاريع العقارية"'
+          hint="العنوان الظاهر أعلى صفحة تصفح المشاريع العقارية."
+          queryKey="opportunities-title"
+          fetcher={fetchOpportunitiesTitle}
+          onSave={(v) => saveOpportunitiesTitle(v, user.id)}
+          onReset={resetOpportunitiesTitle}
+          placeholder={defaultOpportunitiesTitle}
+        />
+      </div>
+
+      <div className="border-t border-border pt-6">
+        <TextSettingField
+          label='فقرة صفحة "المشاريع العقارية"'
+          hint="النص التوضيحي أسفل عنوان صفحة المشاريع العقارية."
+          queryKey="opportunities-subtitle"
+          fetcher={fetchOpportunitiesSubtitle}
+          onSave={(v) => saveOpportunitiesSubtitle(v, user.id)}
+          onReset={resetOpportunitiesSubtitle}
+          placeholder={defaultOpportunitiesSubtitle}
         />
       </div>
     </section>
