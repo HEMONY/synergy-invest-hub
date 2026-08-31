@@ -22,8 +22,10 @@ import {
   costLabel,
   commissionNote,
   createRequest,
+  defaultConditionOptionTexts,
   defaultNewRequestTitle,
   defaultNewRequestSubtitle,
+  fetchConditionOptionTexts,
   fetchNewRequestTitle,
   fetchNewRequestSubtitle,
   formatDuration,
@@ -181,6 +183,10 @@ function NewRequestPage() {
     queryKey: ["new-request-subtitle"],
     queryFn: fetchNewRequestSubtitle,
   });
+  const { data: conditionTexts = defaultConditionOptionTexts } = useQuery({
+    queryKey: ["condition-option-texts"],
+    queryFn: fetchConditionOptionTexts,
+  });
 
   return (
     <SiteLayout>
@@ -206,8 +212,12 @@ function NewRequestPage() {
                       : "border-border text-muted-foreground hover:border-gold/40"
                   }`}
                 >
-                  <span className="block text-sm font-bold">{c.label}</span>
-                  <span className="mt-1 block text-xs">{c.hint}</span>
+                  <span className="block text-sm font-bold">
+                    {conditionTexts[c.key]?.label ?? c.label}
+                  </span>
+                  <span className="mt-1 block text-xs">
+                    {conditionTexts[c.key]?.hint ?? c.hint}
+                  </span>
                 </button>
               ))}
             </div>
