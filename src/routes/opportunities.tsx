@@ -24,7 +24,11 @@ import {
   commissionNote,
   costLabel,
   createInterest,
+  defaultOpportunitiesTitle,
+  defaultOpportunitiesSubtitle,
   fetchOpportunities,
+  fetchOpportunitiesTitle,
+  fetchOpportunitiesSubtitle,
   formatDuration,
   formatSAR,
   propertyTypes,
@@ -70,6 +74,14 @@ function OpportunitiesPage() {
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["opportunities"],
     queryFn: fetchOpportunities,
+  });
+  const { data: pageTitle } = useQuery({
+    queryKey: ["opportunities-title"],
+    queryFn: fetchOpportunitiesTitle,
+  });
+  const { data: pageSubtitle } = useQuery({
+    queryKey: ["opportunities-subtitle"],
+    queryFn: fetchOpportunitiesSubtitle,
   });
 
   const [draft, setDraft] = useState<Filters>(defaultFilters);
@@ -124,8 +136,8 @@ function OpportunitiesPage() {
     <SiteLayout>
       <PageHeader
         back
-        title="المشاريع العقارية"
-        subtitle="مشاريع معتمدة من الإدارة — إعادة تأهيل وترميم ، تشطيب، أو بناء، او تمليك جديد  — مع العائد المتوقع لكل مشروع."
+        title={pageTitle ?? defaultOpportunitiesTitle}
+        subtitle={pageSubtitle ?? defaultOpportunitiesSubtitle}
       />
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 lg:grid-cols-[300px_1fr] lg:px-8">
@@ -272,7 +284,21 @@ function OpportunitiesPage() {
                     <p className="mt-1 text-sm font-semibold text-muted-foreground">{o.title}</p>
                   )}
 
-                 
+                  <div className="mt-4 flex items-center justify-between rounded-xl border border-gold/40 bg-gold/10 p-4">
+                    <div>
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <TrendingUp className="size-3.5 text-gold" /> العائد المتوقع
+                      </p>
+                      <p className="text-2xl font-extrabold text-gold">{o.expected_return}%</p>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs text-muted-foreground">أرباح الشركة العقارية المتوقعة</p>
+                      <p className="text-sm font-bold text-gold">{formatSAR(profit)}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        خلال {formatDuration(o.duration_months, o.duration_days)}
+                      </p>
+                    </div>
+                  </div>
 
                   <p className="mt-4 line-clamp-3 text-sm leading-7 text-muted-foreground">
                     {o.damage_description}
@@ -282,7 +308,18 @@ function OpportunitiesPage() {
                   )}
 
                   <dl className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-muted/60 p-4 text-sm">
-                    
+                    <div>
+                      <dt className="text-xs text-muted-foreground">{costLabel(o.condition)}</dt>
+                      <dd className="font-bold">{formatSAR(Number(o.rehab_cost))}</dd>
+                    </div>
+                    <div>
+                      <dt className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock3 className="size-3" /> مدة التنفيذ
+                      </dt>
+                      <dd className="font-bold">
+                        {formatDuration(o.duration_months, o.duration_days)}
+                      </dd>
+                    </div>
                     
                     <div>
                       <dt className="text-xs text-muted-foreground">الحالة</dt>
