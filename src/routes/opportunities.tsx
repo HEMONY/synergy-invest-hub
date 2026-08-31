@@ -284,43 +284,10 @@ function OpportunitiesPage() {
                     <p className="mt-1 text-sm font-semibold text-muted-foreground">{o.title}</p>
                   )}
 
-                  <div className="mt-4 flex items-center justify-between rounded-xl border border-gold/40 bg-gold/10 p-4">
-                    <div>
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <TrendingUp className="size-3.5 text-gold" /> العائد المتوقع
-                      </p>
-                      <p className="text-2xl font-extrabold text-gold">{o.expected_return}%</p>
-                    </div>
-                    <div className="text-left">
-                      <p className="text-xs text-muted-foreground">أرباح الشركة العقارية المتوقعة</p>
-                      <p className="text-sm font-bold text-gold">{formatSAR(profit)}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        خلال {formatDuration(o.duration_months, o.duration_days)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className="mt-4 line-clamp-3 text-sm leading-7 text-muted-foreground">
-                    {o.damage_description}
-                  </p>
-                  {o.return_notes && (
-                    <p className="mt-2 text-xs leading-6 text-muted-foreground">{o.return_notes}</p>
-                  )}
+                  
 
                   <dl className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-muted/60 p-4 text-sm">
-                    <div>
-                      <dt className="text-xs text-muted-foreground">{costLabel(o.condition)}</dt>
-                      <dd className="font-bold">{formatSAR(Number(o.rehab_cost))}</dd>
-                    </div>
-                    <div>
-                      <dt className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock3 className="size-3" /> مدة التنفيذ
-                      </dt>
-                      <dd className="font-bold">
-                        {formatDuration(o.duration_months, o.duration_days)}
-                      </dd>
-                    </div>
-                    
+                   
                     <div>
                       <dt className="text-xs text-muted-foreground">الحالة</dt>
                       <dd className="font-bold">{statusLabels[o.status] ?? o.status}</dd>
