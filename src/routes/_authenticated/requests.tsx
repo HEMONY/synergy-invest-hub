@@ -246,23 +246,7 @@ function RequestsPage() {
                 <p className="mt-3 text-sm leading-7 text-muted-foreground">
                   {o.damage_description}
                 </p>
-                <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-4">
-                  <div>
-                    <dt className="text-xs text-muted-foreground">{costLabel(o.condition)}</dt>
-                    <dd className="font-bold">{formatSAR(Number(o.rehab_cost))}</dd>
-                  </div>
-                 
-                  <div>
-                    <dt className="text-xs text-muted-foreground">العائد المتوقع</dt>
-                    <dd className="font-bold text-gold">{o.expected_return}%</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-muted-foreground">مدة التنفيذ</dt>
-                    <dd className="font-bold">
-                      {formatDuration(o.duration_months, o.duration_days)}
-                    </dd>
-                  </div>
-                </dl>
+               
 
                 {editingId === o.id ? (
                   <EditRequestForm
