@@ -155,17 +155,7 @@ function Index() {
               <p className="mt-2 line-clamp-2 text-sm leading-7 text-muted-foreground">
                 {o.damage_description}
               </p>
-              <div className="mt-4 flex items-center justify-between rounded-xl border border-gold/40 bg-gold/10 px-4 py-3">
-                <span className="text-xs text-muted-foreground">العائد المتوقع</span>
-                <span className="text-xl font-extrabold text-gold">{o.expected_return}%</span>
-              </div>
-              <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                
-                <div>
-                  <dt className="text-xs text-muted-foreground">مدة التنفيذ</dt>
-                  <dd className="font-bold">{o.duration_months} أشهر</dd>
-                </div>
-              </dl>
+              
               <Button asChild variant="gold" className="mt-5 w-full">
                 <Link to="/opportunities">نريد العمل على هذا المشروع</Link>
               </Button>
