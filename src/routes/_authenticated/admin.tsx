@@ -50,6 +50,8 @@ import {
   defaultNewRequestSubtitle,
   defaultOpportunitiesTitle,
   defaultOpportunitiesSubtitle,
+  defaultConditionOptionTexts,
+  conditionOptions,
   effectiveProgress,
   fetchActivityLogs,
   fetchAllDocuments,
@@ -65,6 +67,7 @@ import {
   fetchNewRequestSubtitle,
   fetchOpportunitiesTitle,
   fetchOpportunitiesSubtitle,
+  fetchConditionOptionTexts,
   formatSAR,
   hasRole,
   logActivity,
@@ -79,6 +82,7 @@ import {
   resetNewRequestSubtitle,
   resetOpportunitiesTitle,
   resetOpportunitiesSubtitle,
+  resetConditionOptionTexts,
   saveSiteTagline,
   saveSiteSubtitle,
   saveAboutTitle,
@@ -88,12 +92,14 @@ import {
   saveNewRequestSubtitle,
   saveOpportunitiesTitle,
   saveOpportunitiesSubtitle,
+  saveConditionOptionTexts,
   statusLabels,
   timeAgo,
   updateInterest,
   updateProfileVerification,
   updateRequest,
   type PropertyRequest,
+  type ConditionOptionTexts,
 } from "@/lib/db";
 
 
@@ -435,7 +441,7 @@ function RequestsSection() {
                   patch: { status: "published", stage_index: Math.max(o.stage_index, 2) },
                   notify: {
                     title: "تم اعتماد ونشر طلبك",
-                    body: `طلبك ${o.code} أصبح متاحاً للشركات العقارية في صفحة المشاريع العقارية .`,
+                    body: `طلبك ${o.code} أصبح متاحاً للشركات العقارية في صفحة الفرص.`,
                   },
                 })
               }
@@ -770,6 +776,89 @@ function TextSettingField({
   );
 }
 
+function ConditionOptionTextsSettings() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["condition-option-texts"],
+    queryFn: fetchConditionOptionTexts,
+  });
+  const [draft, setDraft] = useState<ConditionOptionTexts>(defaultConditionOptionTexts);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (data) setDraft(data);
+  }, [data]);
+
+  const setField = (key: string, field: "label" | "hint", value: string) =>
+    setDraft((d) => ({
+      ...d,
+      [key]: { label: d[key]?.label ?? "", hint: d[key]?.hint ?? "", [field]: value },
+    }));
+
+  const save = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      await saveConditionOptionTexts(draft, user.id);
+      toast.success("تم الحفظ");
+      queryClient.invalidateQueries({ queryKey: ["condition-option-texts"] });
+    } catch (err) {
+      toast.error("تعذر الحفظ", { description: (err as Error).message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const reset = async () => {
+    setSaving(true);
+    try {
+      await resetConditionOptionTexts();
+      toast.success("تم حذف التخصيص — رجعت النصوص الافتراضية");
+      queryClient.invalidateQueries({ queryKey: ["condition-option-texts"] });
+    } catch (err) {
+      toast.error("تعذر الحذف", { description: (err as Error).message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <h3 className="text-base font-bold">خيارات "حالة العقار" في صفحة إضافة عقار</h3>
+      <p className="mt-1 text-xs text-muted-foreground">
+        العنوان والوصف الظاهرين على كل بطاقة من البطاقات الأربع.
+      </p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        {conditionOptions.map((c) => (
+          <div key={c.key} className="rounded-xl border border-border p-3">
+            <Label className="text-xs">العنوان</Label>
+            <Input
+              className="mt-1"
+              value={draft[c.key]?.label ?? c.label}
+              onChange={(e) => setField(c.key, "label", e.target.value)}
+            />
+            <Label className="mt-3 block text-xs">الوصف</Label>
+            <Input
+              className="mt-1"
+              value={draft[c.key]?.hint ?? c.hint}
+              onChange={(e) => setField(c.key, "hint", e.target.value)}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button size="sm" variant="gold" disabled={saving} onClick={save}>
+          حفظ
+        </Button>
+        <Button size="sm" variant="outline" disabled={saving} onClick={reset}>
+          حذف (الرجوع للافتراضي)
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function SiteTaglineSettings() {
   const { user } = useAuth();
   if (!user) return null;
@@ -883,6 +972,10 @@ function SiteTaglineSettings() {
           onReset={resetOpportunitiesSubtitle}
           placeholder={defaultOpportunitiesSubtitle}
         />
+      </div>
+
+      <div className="border-t border-border pt-6">
+        <ConditionOptionTextsSettings />
       </div>
     </section>
   );
@@ -1155,7 +1248,7 @@ function PaymentsSection() {
           <thead className="text-xs text-muted-foreground">
             <tr>
               <th className="pb-3">المشروع</th>
-              <th className="pb-3">قيمة العمل </th>
+              <th className="pb-3">التمويل</th>
               <th className="pb-3">العمولة</th>
               <th className="pb-3">القسط الشهري</th>
             </tr>
