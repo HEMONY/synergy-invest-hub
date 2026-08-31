@@ -18,10 +18,10 @@ const socialLinks = [
   { name: "Instagram", href: "https://instagram.com/abdallahidris678", Icon: InstagramIcon },
   { name: "TikTok", href: "https://tiktok.com/@abdallahidris1234", Icon: TikTokIcon },
   { name: "X", href: "https://x.com/AbdallahId325", Icon: XIcon },
-  { name: "Facebook", href: "https://www.facebook.com/abdallah.idris.545", Icon: FacebookIcon },
+  { name: "Facebook", href: "https://www.facebook.com/profile.php?id=61593742871129", Icon: FacebookIcon },
   { name: "WhatsApp", href: "https://wa.me/249967807618", Icon: WhatsAppIcon },
   { name: "Snapchat", href: "https://www.snapchat.com/add/b78341056", Icon: SnapchatIcon },
-  { name: "YouTube", href: "https://www.youtube.com/@AbdallahIdris-z7c", Icon: YouTubeIcon },
+  //{ name: "YouTube", href: "https://www.youtube.com/@AbdallahIdris-z7c", Icon: YouTubeIcon },
 ];
 
 export function Footer() {
