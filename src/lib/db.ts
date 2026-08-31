@@ -246,6 +246,40 @@ export const saveAboutText = (value: string, userId: string) =>
 /** حذف التخصيص والرجوع لنص القسم الافتراضي. */
 export const resetAboutText = () => resetSetting("about_text");
 
+/** عنوان وفقرة عنوان صفحة "إضافة عقار". */
+export const defaultNewRequestTitle = "إضافة عقار";
+export const defaultNewRequestSubtitle =
+  "أرفع عقار بحاجة لإعادة تأهيل، أو عقار يحتاج تشطيب، أو بناء عقار جديد.";
+
+export const fetchNewRequestTitle = () => fetchSetting("new_request_title", defaultNewRequestTitle);
+export const saveNewRequestTitle = (value: string, userId: string) =>
+  saveSetting("new_request_title", value, userId);
+export const resetNewRequestTitle = () => resetSetting("new_request_title");
+
+export const fetchNewRequestSubtitle = () =>
+  fetchSetting("new_request_subtitle", defaultNewRequestSubtitle);
+export const saveNewRequestSubtitle = (value: string, userId: string) =>
+  saveSetting("new_request_subtitle", value, userId);
+export const resetNewRequestSubtitle = () => resetSetting("new_request_subtitle");
+
+/** عنوان وفقرة عنوان صفحة "المشاريع العقارية". */
+export const defaultOpportunitiesTitle = "المشاريع العقارية";
+export const defaultOpportunitiesSubtitle =
+  "مشاريع معتمدة من الإدارة — إعادة تأهيل وترميم، تشطيب، أو بناء، او تمليك جديد — مع العائد المتوقع لكل مشروع.";
+
+export const fetchOpportunitiesTitle = () =>
+  fetchSetting("opportunities_title", defaultOpportunitiesTitle);
+export const saveOpportunitiesTitle = (value: string, userId: string) =>
+  saveSetting("opportunities_title", value, userId);
+export const resetOpportunitiesTitle = () => resetSetting("opportunities_title");
+
+export const fetchOpportunitiesSubtitle = () =>
+  fetchSetting("opportunities_subtitle", defaultOpportunitiesSubtitle);
+export const saveOpportunitiesSubtitle = (value: string, userId: string) =>
+  saveSetting("opportunities_subtitle", value, userId);
+export const resetOpportunitiesSubtitle = () => resetSetting("opportunities_subtitle");
+
+
 export async function cancelMyRequest(id: string) {
   const { error } = await supabase.from("property_requests").delete().eq("id", id);
   if (error) throw error;
