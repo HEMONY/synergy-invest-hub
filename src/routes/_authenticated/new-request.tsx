@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -21,6 +22,10 @@ import {
   costLabel,
   commissionNote,
   createRequest,
+  defaultNewRequestTitle,
+  defaultNewRequestSubtitle,
+  fetchNewRequestTitle,
+  fetchNewRequestSubtitle,
   formatDuration,
   formatSAR,
   uploadDocument,
@@ -168,13 +173,21 @@ function NewRequestPage() {
   };
 
   const damaged = condition === "damaged";
+  const { data: pageTitle } = useQuery({
+    queryKey: ["new-request-title"],
+    queryFn: fetchNewRequestTitle,
+  });
+  const { data: pageSubtitle } = useQuery({
+    queryKey: ["new-request-subtitle"],
+    queryFn: fetchNewRequestSubtitle,
+  });
 
   return (
     <SiteLayout>
       <PageHeader
-        title="إضافة عقار"
+        title={pageTitle ?? defaultNewRequestTitle}
         back
-        subtitle="أرفع عقار  بحاجة لإعادة تأهيل، أو عقار يحتاج تشطيب، أو بناء عقار جديد، أو تمليك عقار جديد."
+        subtitle={pageSubtitle ?? defaultNewRequestSubtitle}
       />
 
       <div className="mx-auto max-w-3xl px-4 py-10 lg:px-8">
