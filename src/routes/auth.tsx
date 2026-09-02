@@ -360,6 +360,44 @@ function AuthPage() {
               >
                 تسجيل الدخول
               </Button>
+
+              {!forgotOpen ? (
+                <button
+                  type="button"
+                  className="w-full text-center text-xs font-semibold text-gold"
+                  onClick={() => {
+                    setForgotEmail(login.email);
+                    setForgotOpen(true);
+                  }}
+                >
+                  نسيت كلمة المرور؟
+                </button>
+              ) : (
+                <div className="rounded-2xl border border-gold/30 p-4">
+                  <Label className="text-xs">أدخل بريدك لإرسال رابط تعيين كلمة مرور جديدة</Label>
+                  <Input
+                    className="mt-2"
+                    type="email"
+                    dir="ltr"
+                    placeholder="name@example.com"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                  />
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      variant="gold"
+                      size="sm"
+                      disabled={loading}
+                      onClick={handleForgotPassword}
+                    >
+                      إرسال الرابط
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setForgotOpen(false)}>
+                      إلغاء
+                    </Button>
+                  </div>
+                </div>
+              )}
               <Button
                 variant="outlineGold"
                 className="w-full gap-2"
