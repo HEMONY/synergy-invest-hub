@@ -1248,7 +1248,7 @@ function PaymentsSection() {
           <thead className="text-xs text-muted-foreground">
             <tr>
               <th className="pb-3">المشروع</th>
-              <th className="pb-3">التمويل</th>
+              <th className="pb-3">ربح المشروع</th>
               <th className="pb-3">العمولة</th>
               <th className="pb-3">القسط الشهري</th>
             </tr>
