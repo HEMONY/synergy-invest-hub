@@ -231,6 +231,44 @@ function AuthPage() {
             <Logo size={48} />
           </div>
 
+          {otpEmail && (
+            <div className="mb-6 rounded-2xl border border-gold/40 bg-gold/5 p-5">
+              <h2 className="text-sm font-extrabold">تأكيد الحساب</h2>
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                تم تسجيل حسابك. الرجاء إدخال رمز التأكيد المرسل إلى{" "}
+                <span dir="ltr" className="font-semibold text-gold">
+                  {otpEmail}
+                </span>
+                .
+              </p>
+              <Input
+                className="mt-3 text-center text-lg tracking-[0.5em]"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="000000"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              />
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button variant="gold" size="sm" disabled={loading} onClick={handleVerifyOtp}>
+                  تأكيد الحساب
+                </Button>
+                <Button
+                  variant="outlineGold"
+                  size="sm"
+                  disabled={loading}
+                  onClick={handleResendOtp}
+                >
+                  إعادة إرسال الرمز
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setOtpEmail("")}>
+                  إلغاء
+                </Button>
+              </div>
+            </div>
+          )}
+
           <Tabs defaultValue="signup">
             <TabsList className="w-full">
               <TabsTrigger value="signup" className="flex-1">
