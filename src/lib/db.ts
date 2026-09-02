@@ -506,3 +506,34 @@ export async function updateInterest(id: string, status: string) {
 export async function notifyUser(userId: string, kind: string, title: string, body: string) {
   await supabase.from("notifications").insert({ user_id: userId, kind, title, body });
 }
+
+/* ---------- إدارة الصلاحيات والمستخدمين (للمدير) ---------- */
+
+export type AppRole = "admin" | "supervisor" | "owner" | "investor";
+
+export async function fetchAllUserRoles() {
+  const { data, error } = await supabase.from("user_roles").select("user_id, role");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function grantRole(userId: string, role: AppRole) {
+  const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
+  if (error && !error.message.includes("duplicate")) throw error;
+}
+
+export async function revokeRole(userId: string, role: AppRole) {
+  const { error } = await supabase
+    .from("user_roles")
+    .delete()
+    .eq("user_id", userId)
+    .eq("role", role);
+  if (error) throw error;
+}
+
+export const roleLabels: Record<string, string> = {
+  admin: "مدير",
+  supervisor: "مشرف",
+  owner: "صاحب عقار",
+  investor: "شركة عقارية",
+};
