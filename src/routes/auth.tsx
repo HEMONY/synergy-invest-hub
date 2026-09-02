@@ -63,6 +63,10 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [signup, setSignup] = useState({ fullName: "", email: "", password: "" });
   const [login, setLogin] = useState({ email: "", password: "" });
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -77,7 +81,7 @@ function AuthPage() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
@@ -86,15 +90,82 @@ function AuthPage() {
       },
     });
     setLoading(false);
-    if (error) {
-      toast.error(
-        error.message.includes("already registered")
-          ? "هذا البريد مسجّل مسبقاً، سجّل الدخول"
-          : error.message,
-      );
+
+    const alreadyRegistered =
+      (!!error && /already registered|already exists|User already/i.test(error.message)) ||
+      (!error && !data.session && (data.user?.identities?.length ?? 0) === 0);
+
+    if (alreadyRegistered) {
+      toast.error("هذا البريد مسجّل من قبل", {
+        description: "يرجى التسجيل ببريد آخر أو تسجيل الدخول بحسابك الحالي.",
+      });
       return;
     }
-    toast.success("تم إنشاء الحساب — تحقق من بريدك لتأكيد التسجيل");
+    if (error) {
+      toast.error("تعذّر إنشاء الحساب", { description: error.message });
+      return;
+    }
+
+    setOtpEmail(parsed.data.email);
+    setOtp("");
+    toast.success("تم تسجيل حسابك", {
+      description: "الرجاء إدخال رمز التأكيد المكوّن من 6 أرقام الذي تم إرساله إلى بريدك.",
+    });
+  };
+
+  const handleVerifyOtp = async () => {
+    const code = otp.replace(/\D/g, "");
+    if (code.length < 6) {
+      toast.error("أدخل رمز التأكيد المكوّن من 6 أرقام");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.verifyOtp({
+      email: otpEmail,
+      token: code,
+      type: "signup",
+    });
+    setLoading(false);
+    if (error) {
+      toast.error("رمز التأكيد غير صحيح أو منتهي الصلاحية", {
+        description: "تأكد من الرمز المرسل إلى بريدك أو اطلب رمزاً جديداً.",
+      });
+      return;
+    }
+    toast.success("تم تأكيد حسابك بنجاح", { description: "مرحباً بك في منصة سينرجي." });
+    navigate({ to: "/requests" });
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.resend({ type: "signup", email: otpEmail });
+    setLoading(false);
+    if (error) {
+      toast.error("تعذّر إعادة إرسال الرمز", { description: error.message });
+      return;
+    }
+    toast.success("تم إرسال رمز تأكيد جديد إلى بريدك");
+  };
+
+  const handleForgotPassword = async () => {
+    const email = forgotEmail.trim();
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      toast.error("أدخل بريداً إلكترونياً صحيحاً");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error("تعذّر إرسال رابط الاستعادة", { description: error.message });
+      return;
+    }
+    toast.success("تم إرسال رابط استعادة كلمة المرور", {
+      description: "افتح بريدك واتبع الرابط لتعيين كلمة مرور جديدة.",
+    });
+    setForgotOpen(false);
   };
 
   const handleLogin = async () => {
@@ -107,6 +178,13 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword(parsed.data);
     setLoading(false);
     if (error) {
+      if (/Email not confirmed/i.test(error.message)) {
+        setOtpEmail(parsed.data.email);
+        toast.error("لم يتم تأكيد حسابك بعد", {
+          description: "أدخل رمز التأكيد المرسل إلى بريدك لإكمال التسجيل.",
+        });
+        return;
+      }
       toast.error("بيانات الدخول غير صحيحة");
       return;
     }
@@ -152,6 +230,44 @@ function AuthPage() {
           <div className="mb-8 lg:hidden">
             <Logo size={48} />
           </div>
+
+          {otpEmail && (
+            <div className="mb-6 rounded-2xl border border-gold/40 bg-gold/5 p-5">
+              <h2 className="text-sm font-extrabold">تأكيد الحساب</h2>
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                تم تسجيل حسابك. الرجاء إدخال رمز التأكيد المرسل إلى{" "}
+                <span dir="ltr" className="font-semibold text-gold">
+                  {otpEmail}
+                </span>
+                .
+              </p>
+              <Input
+                className="mt-3 text-center text-lg tracking-[0.5em]"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="000000"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              />
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button variant="gold" size="sm" disabled={loading} onClick={handleVerifyOtp}>
+                  تأكيد الحساب
+                </Button>
+                <Button
+                  variant="outlineGold"
+                  size="sm"
+                  disabled={loading}
+                  onClick={handleResendOtp}
+                >
+                  إعادة إرسال الرمز
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setOtpEmail("")}>
+                  إلغاء
+                </Button>
+              </div>
+            </div>
+          )}
 
           <Tabs defaultValue="signup">
             <TabsList className="w-full">
@@ -282,6 +398,44 @@ function AuthPage() {
               >
                 تسجيل الدخول
               </Button>
+
+              {!forgotOpen ? (
+                <button
+                  type="button"
+                  className="w-full text-center text-xs font-semibold text-gold"
+                  onClick={() => {
+                    setForgotEmail(login.email);
+                    setForgotOpen(true);
+                  }}
+                >
+                  نسيت كلمة المرور؟
+                </button>
+              ) : (
+                <div className="rounded-2xl border border-gold/30 p-4">
+                  <Label className="text-xs">أدخل بريدك لإرسال رابط تعيين كلمة مرور جديدة</Label>
+                  <Input
+                    className="mt-2"
+                    type="email"
+                    dir="ltr"
+                    placeholder="name@example.com"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                  />
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      variant="gold"
+                      size="sm"
+                      disabled={loading}
+                      onClick={handleForgotPassword}
+                    >
+                      إرسال الرابط
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setForgotOpen(false)}>
+                      إلغاء
+                    </Button>
+                  </div>
+                </div>
+              )}
               <Button
                 variant="outlineGold"
                 className="w-full gap-2"

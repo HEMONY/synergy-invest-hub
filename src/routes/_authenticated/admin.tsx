@@ -299,10 +299,18 @@ function Overview() {
 
 function UsersSection() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { isAdmin } = useStaff();
   const { data: profiles = [], isLoading } = useQuery({
     queryKey: ["admin-profiles"],
     queryFn: fetchAllProfiles,
   });
+  const { data: userRoles = [] } = useQuery({
+    queryKey: ["admin-user-roles"],
+    queryFn: fetchAllUserRoles,
+  });
+
+  const rolesOf = (id: string) => userRoles.filter((r) => r.user_id === id).map((r) => r.role);
 
   const mutate = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -310,70 +318,199 @@ function UsersSection() {
       await notifyUser(
         id,
         "verification",
-        status === "approved" ? "تم توثيق حسابك" : "تم رفض مستندات التوثيق",
-        status === "approved"
+        status === "verified" ? "تم توثيق حسابك" : "تم رفض مستندات التوثيق",
+        status === "verified"
           ? "تمت الموافقة على مستنداتك، أصبح حسابك موثقاً."
           : "يرجى إعادة رفع مستندات صحيحة لإتمام التوثيق.",
       );
     },
     onSuccess: (_d, v) => {
       queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
-      toast.success(v.status === "approved" ? "تم توثيق الحساب" : "تم رفض المستندات");
+      toast.success(v.status === "verified" ? "تم توثيق الحساب" : "تم رفض المستندات");
     },
     onError: (e) => toast.error("تعذر التحديث", { description: (e as Error).message }),
+  });
+
+  const roleMutate = useMutation({
+    mutationFn: async ({
+      id,
+      role,
+      grant,
+    }: {
+      id: string;
+      role: "admin" | "supervisor";
+      grant: boolean;
+    }) => {
+      if (grant) await grantRole(id, role);
+      else await revokeRole(id, role);
+      await notifyUser(
+        id,
+        "verification",
+        grant ? "تم تحديث صلاحياتك" : "تم تعديل صلاحياتك",
+        grant
+          ? `تمت ترقيتك إلى ${roleLabels[role]} في منصة سينرجي.`
+          : `تم سحب صلاحية ${roleLabels[role]} من حسابك.`,
+      );
+      if (user)
+        await logActivity({
+          actor_id: user.id,
+          actor_name: user.email ?? "",
+          action: grant ? "grant_role" : "revoke_role",
+          entity_type: "user",
+          entity_id: id,
+          description: `${grant ? "منح" : "سحب"} صلاحية ${roleLabels[role]}`,
+        });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-user-roles"] });
+      queryClient.invalidateQueries({ queryKey: ["staff-roles"] });
+      toast.success("تم تحديث الصلاحيات");
+    },
+    onError: (e) => toast.error("تعذر تحديث الصلاحيات", { description: (e as Error).message }),
+  });
+
+  const removeUser = useMutation({
+    mutationFn: async (id: string) => {
+      await deleteUserAccount({ data: { userId: id } });
+      if (user)
+        await logActivity({
+          actor_id: user.id,
+          actor_name: user.email ?? "",
+          action: "delete_user",
+          entity_type: "user",
+          entity_id: id,
+          description: "حذف مستخدم من المنصة",
+        });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-user-roles"] });
+      toast.success("تم حذف المستخدم نهائياً");
+    },
+    onError: (e) => toast.error("تعذر حذف المستخدم", { description: (e as Error).message }),
   });
 
   if (isLoading) return <p className="text-sm text-muted-foreground">جارٍ التحميل...</p>;
 
   return (
-    <div className="card-surface overflow-x-auto p-2">
-      <table className="w-full text-right text-sm">
-        <thead className="text-xs text-muted-foreground">
-          <tr>
-            <th className="p-3">الاسم</th>
-            <th className="p-3">النوع</th>
-            <th className="p-3">حالة التوثيق</th>
-            <th className="p-3">تاريخ الانضمام</th>
-            <th className="p-3">إجراءات</th>
-          </tr>
-        </thead>
-        <tbody>
-          {profiles.map((u) => (
-            <tr key={u.id} className="border-t border-border">
-              <td className="p-3 font-semibold">{u.full_name || "بدون اسم"}</td>
-              <td className="p-3 text-muted-foreground">
-                {u.account_type === "investor" ? "شركة عقارية" : "صاحب عقار"}
-              </td>
-              <td className="p-3">
-                <Badge className={statusStyle[u.verification_status] ?? "bg-muted"}>
-                  {verificationLabels[u.verification_status] ?? u.verification_status}
-                </Badge>
-              </td>
-              <td className="p-3 text-muted-foreground">
-                {new Date(u.created_at).toLocaleDateString("en-GB")}
-              </td>
-              <td className="p-3">
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="gold"
-                    onClick={() => mutate.mutate({ id: u.id, status: "approved" })}
-                  >
-                    توثيق
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => mutate.mutate({ id: u.id, status: "rejected" })}
-                  >
-                    رفض
-                  </Button>
-                </div>
-              </td>
+    <div className="space-y-4">
+      {!isAdmin && (
+        <p className="card-surface p-4 text-xs text-muted-foreground">
+          ترقية المشرفين وحذف المستخدمين متاحة للمدير فقط.
+        </p>
+      )}
+
+      <div className="card-surface overflow-x-auto p-2">
+        <table className="w-full text-right text-sm">
+          <thead className="text-xs text-muted-foreground">
+            <tr>
+              <th className="p-3">الاسم</th>
+              <th className="p-3">النوع</th>
+              <th className="p-3">الصلاحية</th>
+              <th className="p-3">حالة التوثيق</th>
+              <th className="p-3">تاريخ الانضمام</th>
+              <th className="p-3">إجراءات</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {profiles.map((u) => {
+              const userRolesList = rolesOf(u.id);
+              const isUserAdmin = userRolesList.includes("admin");
+              const isUserSupervisor = userRolesList.includes("supervisor");
+              const isSelf = u.id === user?.id;
+              return (
+                <tr key={u.id} className="border-t border-border align-top">
+                  <td className="p-3 font-semibold">{u.full_name || "بدون اسم"}</td>
+                  <td className="p-3 text-muted-foreground">
+                    {u.account_type === "investor" ? "شركة عقارية" : "صاحب عقار"}
+                  </td>
+                  <td className="p-3">
+                    <div className="flex flex-wrap gap-1">
+                      {isUserAdmin && <Badge className="bg-gold/20 text-gold">مدير</Badge>}
+                      {isUserSupervisor && (
+                        <Badge className="bg-primary/15 text-primary">مشرف</Badge>
+                      )}
+                      {!isUserAdmin && !isUserSupervisor && (
+                        <span className="text-xs text-muted-foreground">مستخدم</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <Badge className={statusStyle[u.verification_status] ?? "bg-muted"}>
+                      {verificationLabels[u.verification_status] ?? u.verification_status}
+                    </Badge>
+                  </td>
+                  <td className="p-3 text-muted-foreground">
+                    {new Date(u.created_at).toLocaleDateString("en-GB")}
+                  </td>
+                  <td className="p-3">
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="gold"
+                        onClick={() => mutate.mutate({ id: u.id, status: "verified" })}
+                      >
+                        توثيق
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => mutate.mutate({ id: u.id, status: "rejected" })}
+                      >
+                        رفض
+                      </Button>
+
+                      {isAdmin && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outlineGold"
+                            disabled={roleMutate.isPending}
+                            onClick={() =>
+                              roleMutate.mutate({
+                                id: u.id,
+                                role: "supervisor",
+                                grant: !isUserSupervisor,
+                              })
+                            }
+                          >
+                            {isUserSupervisor ? "خفض من مشرف" : "ترقية لمشرف"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outlineGold"
+                            disabled={roleMutate.isPending || isSelf}
+                            onClick={() =>
+                              roleMutate.mutate({ id: u.id, role: "admin", grant: !isUserAdmin })
+                            }
+                          >
+                            {isUserAdmin ? "خفض من مدير" : "ترقية لمدير"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={removeUser.isPending || isSelf}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `سيتم حذف حساب «${u.full_name || "بدون اسم"}» نهائياً. متابعة؟`,
+                                )
+                              )
+                                removeUser.mutate(u.id);
+                            }}
+                          >
+                            <Trash2 className="size-4" /> إزالة
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
