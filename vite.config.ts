@@ -11,7 +11,12 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 const isVercel = !!process.env["VERCEL"];
 
 export default defineConfig({
-  ...(isVercel ? { nitro: { preset: "vercel" } } : {}),
+  // `inlineDynamicImports` isn't in this package's TS types yet, but nitro/rollup
+  // both accept it at runtime — it's required to avoid a circular-chunk bug
+  // ("__exportAll is not a function") that otherwise breaks the Vercel build.
+  ...(isVercel
+    ? { nitro: { preset: "vercel", inlineDynamicImports: true } as { preset: string } }
+    : {}),
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
