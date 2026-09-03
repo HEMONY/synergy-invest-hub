@@ -10,6 +10,7 @@ import {
   Receipt,
   Settings,
   ShieldCheck,
+  Trash2,
   Users,
   Wallet,
 } from "lucide-react";
@@ -35,6 +36,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
+import { useStaff } from "@/hooks/useStaff";
 import {
   activityActions,
   commissionNote,
@@ -101,6 +103,7 @@ import {
   type PropertyRequest,
   type ConditionOptionTexts,
 } from "@/lib/db";
+import { deleteUserAccount } from "@/lib/admin.functions";
 
 
 export const Route = createFileRoute("/_authenticated/admin")({
