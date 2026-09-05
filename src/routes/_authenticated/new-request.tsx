@@ -137,6 +137,19 @@ function NewRequestPage() {
       toast.error("أكمل البيانات الأساسية", { description: "العنوان والمدينة والحي مطلوبة." });
       return;
     }
+    const phone = form.owner_phone.replace(/[^\d+]/g, "");
+    if (phone.length < 9) {
+      toast.error("رقم الهاتف غير صحيح", {
+        description: "أدخل رقم هاتف صحيح للتواصل — لن يظهر للعامة.",
+      });
+      return;
+    }
+    if (form.location_details.trim().length < 10) {
+      toast.error("الموقع الدقيق مطلوب", {
+        description: "اكتب وصفاً واضحاً لموقع العقار (لا يظهر للعامة).",
+      });
+      return;
+    }
     const missing = requiredDocs.filter((d) => !files[d.key]);
     if (missing.length > 0) {
       toast.error("المرفقات إجبارية", {
@@ -146,7 +159,7 @@ function NewRequestPage() {
     }
     setSaving(true);
     try {
-      await createRequest({
+      const created = await createRequest({
         owner_id: user.id,
         title: form.title.trim(),
         condition,
@@ -163,6 +176,12 @@ function NewRequestPage() {
         expected_return: num(form.expected_return),
         return_notes: form.return_notes.trim(),
       });
+      await saveRequestPrivateDetails({
+        request_id: created.id,
+        owner_phone: phone,
+        location_details: form.location_details.trim(),
+        property_details: form.property_details.trim(),
+      });
       for (const d of requiredDocs) {
         const file = files[d.key];
         if (file) await uploadDocument(user.id, d.key, file);
@@ -170,6 +189,7 @@ function NewRequestPage() {
       toast.success("تم رفع الطلب بنجاح", {
         description: "سيراجع فريق المنصة الطلب قبل نشره للشركات العقارية.",
       });
+
       navigate({ to: "/requests" });
     } catch (err) {
       toast.error("تعذر حفظ الطلب", { description: (err as Error).message });
