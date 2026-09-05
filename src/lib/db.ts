@@ -499,11 +499,106 @@ export async function updateProfileVerification(id: string, verification_status:
 }
 
 export async function updateInterest(id: string, status: string) {
-  const patch: Record<string, unknown> = { status };
-  if (status === "commission_paid") patch["commission_paid_at"] = new Date().toISOString();
+  const patch: TablesUpdate<"funding_interests"> = { status };
+  if (status === "commission_paid") patch.commission_paid_at = new Date().toISOString();
   const { error } = await supabase.from("funding_interests").update(patch).eq("id", id);
   if (error) throw error;
 }
+
+/* ---------- بيانات التواصل الخاصة بالطلب ---------- */
+
+export type RequestPrivateDetails = Tables<"request_private_details">;
+
+export async function saveRequestPrivateDetails(input: {
+  request_id: string;
+  owner_phone: string;
+  location_details: string;
+  property_details: string;
+}) {
+  const { error } = await supabase.from("request_private_details").upsert(input);
+  if (error) throw error;
+}
+
+export async function fetchRequestPrivateDetails(requestId: string) {
+  const { data, error } = await supabase
+    .from("request_private_details")
+    .select("*")
+    .eq("request_id", requestId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchAllRequestPrivateDetails() {
+  const { data, error } = await supabase.from("request_private_details").select("*");
+  if (error) throw error;
+  return data ?? [];
+}
+
+/* ---------- عروض الشركات العقارية ---------- */
+
+/** مراحل الربط بالترتيب من تقديم العرض حتى بدء العمل. */
+export const interestStatusLabels: Record<string, string> = {
+  pending: "عرض جديد — بانتظار مراجعة سينرجي",
+  under_review: "قيد مراجعة سينرجي",
+  presented: "معروض على صاحب المشروع",
+  owner_approved: "وافق صاحب المشروع",
+  owner_rejected: "رفضه صاحب المشروع",
+  approved: "تم اعتماد الربط — بانتظار سداد العمولة",
+  commission_paid: "تم سداد العمولة — بيانات التواصل متاحة",
+  rejected: "مرفوض",
+};
+
+export type CompanyOfferInput = {
+  request_id: string;
+  investor_id: string;
+  amount: number;
+  company_name: string;
+  company_phone: string;
+  company_location: string;
+  scope_of_work: string;
+  proposed_works: string;
+  payment_method: string;
+  warranty: string;
+  company_notes: string;
+};
+
+export async function submitCompanyOffer(input: CompanyOfferInput) {
+  const { error } = await supabase
+    .from("funding_interests")
+    .insert({ ...input, message: input.scope_of_work, status: "pending" });
+  if (error) throw error;
+}
+
+/** العروض المقدمة على مشاريع صاحب الحساب (يراها بعد أن تعرضها الإدارة عليه). */
+export async function fetchOffersForMyRequests(ownerId: string) {
+  const { data: requests, error: reqErr } = await supabase
+    .from("property_requests")
+    .select("id, code, title, city, district")
+    .eq("owner_id", ownerId);
+  if (reqErr) throw reqErr;
+  const ids = (requests ?? []).map((r) => r.id);
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from("funding_interests")
+    .select("*")
+    .in("request_id", ids)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((i) => ({
+    ...i,
+    request: (requests ?? []).find((r) => r.id === i.request_id) ?? null,
+  }));
+}
+
+export async function setCommissionAmount(id: string, amount: number) {
+  const { error } = await supabase
+    .from("funding_interests")
+    .update({ commission_amount: amount })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 
 
 export async function notifyUser(userId: string, kind: string, title: string, body: string) {
