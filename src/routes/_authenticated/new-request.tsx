@@ -331,8 +331,46 @@ function NewRequestPage() {
               />
             </div>
 
-            
           </div>
+
+          <div className="rounded-xl border border-border bg-muted/40 p-4">
+            <h3 className="text-sm font-bold">بيانات خاصة — تظهر لإدارة المنصة فقط</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              لن تُعرض هذه البيانات في صفحة المشاريع، وتُسلَّم للشركة العقارية فقط بعد اعتماد الربط
+              وسداد عمولة المنصة.
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label className="text-xs">رقم هاتفك للتواصل</Label>
+                <Input
+                  className="mt-2"
+                  inputMode="tel"
+                  value={form.owner_phone}
+                  onChange={(e) => set("owner_phone")(e.target.value)}
+                  placeholder="0912345678"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">موقع العقار الدقيق</Label>
+                <Input
+                  className="mt-2"
+                  value={form.location_details}
+                  onChange={(e) => set("location_details")(e.target.value)}
+                  placeholder="أمدرمان — ودنوباوي، مربع 5، خلف مسجد النور"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="text-xs">وصف تفصيلي للموقع والعقار</Label>
+                <Textarea
+                  className="mt-2 min-h-24"
+                  value={form.property_details}
+                  onChange={(e) => set("property_details")(e.target.value)}
+                  placeholder="منزل من طابق واحد، مدخل من الشارع الرئيسي، أقرب علامة مميزة..."
+                />
+              </div>
+            </div>
+          </div>
+
 
           <div className="rounded-xl border border-gold/40 bg-gold/5 p-4">
             <h3 className="text-sm font-bold">المرفقات المطلوبة (إجبارية)</h3>
