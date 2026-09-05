@@ -499,9 +499,12 @@ export async function updateProfileVerification(id: string, verification_status:
 }
 
 export async function updateInterest(id: string, status: string) {
-  const { error } = await supabase.from("funding_interests").update({ status }).eq("id", id);
+  const patch: Record<string, unknown> = { status };
+  if (status === "commission_paid") patch["commission_paid_at"] = new Date().toISOString();
+  const { error } = await supabase.from("funding_interests").update(patch).eq("id", id);
   if (error) throw error;
 }
+
 
 export async function notifyUser(userId: string, kind: string, title: string, body: string) {
   await supabase.from("notifications").insert({ user_id: userId, kind, title, body });
