@@ -23,7 +23,7 @@ import {
   conditionOptions,
   commissionNote,
   costLabel,
-  createInterest,
+  submitCompanyOffer,
   defaultOpportunitiesTitle,
   defaultOpportunitiesSubtitle,
   fetchOpportunities,
