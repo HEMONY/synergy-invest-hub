@@ -343,7 +343,7 @@ function OpportunitiesPage() {
                     variant="gold"
                     className="mt-5 w-full"
                     disabled={pending === o.id}
-                    onClick={() => handleInterest(o.id, Number(o.funding_needed), o.code)}
+                    onClick={() => openOffer(o.id, Number(o.funding_needed), o.code)}
                   >
                     {pending === o.id ? "جارٍ الإرسال..." : "نريد العمل على هذا المشروع"}
                   </Button>
