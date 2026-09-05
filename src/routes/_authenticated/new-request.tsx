@@ -30,7 +30,9 @@ import {
   fetchNewRequestSubtitle,
   formatDuration,
   formatSAR,
+  saveRequestPrivateDetails,
   uploadDocument,
+
   propertyTypes,
   type ConditionKey,
 } from "@/lib/db";
@@ -115,7 +117,11 @@ function NewRequestPage() {
     funding_needed: "",
     expected_return: "",
     return_notes: "",
+    owner_phone: "",
+    location_details: "",
+    property_details: "",
   });
+
 
   const [files, setFiles] = useState<Record<string, File | null>>({
     property_photo: null,
@@ -133,6 +139,19 @@ function NewRequestPage() {
       toast.error("أكمل البيانات الأساسية", { description: "العنوان والمدينة والحي مطلوبة." });
       return;
     }
+    const phone = form.owner_phone.replace(/[^\d+]/g, "");
+    if (phone.length < 9) {
+      toast.error("رقم الهاتف غير صحيح", {
+        description: "أدخل رقم هاتف صحيح للتواصل — لن يظهر للعامة.",
+      });
+      return;
+    }
+    if (form.location_details.trim().length < 10) {
+      toast.error("الموقع الدقيق مطلوب", {
+        description: "اكتب وصفاً واضحاً لموقع العقار (لا يظهر للعامة).",
+      });
+      return;
+    }
     const missing = requiredDocs.filter((d) => !files[d.key]);
     if (missing.length > 0) {
       toast.error("المرفقات إجبارية", {
@@ -142,7 +161,7 @@ function NewRequestPage() {
     }
     setSaving(true);
     try {
-      await createRequest({
+      const created = await createRequest({
         owner_id: user.id,
         title: form.title.trim(),
         condition,
@@ -159,6 +178,12 @@ function NewRequestPage() {
         expected_return: num(form.expected_return),
         return_notes: form.return_notes.trim(),
       });
+      await saveRequestPrivateDetails({
+        request_id: created.id,
+        owner_phone: phone,
+        location_details: form.location_details.trim(),
+        property_details: form.property_details.trim(),
+      });
       for (const d of requiredDocs) {
         const file = files[d.key];
         if (file) await uploadDocument(user.id, d.key, file);
@@ -166,6 +191,7 @@ function NewRequestPage() {
       toast.success("تم رفع الطلب بنجاح", {
         description: "سيراجع فريق المنصة الطلب قبل نشره للشركات العقارية.",
       });
+
       navigate({ to: "/requests" });
     } catch (err) {
       toast.error("تعذر حفظ الطلب", { description: (err as Error).message });
@@ -305,8 +331,46 @@ function NewRequestPage() {
               />
             </div>
 
-            
           </div>
+
+          <div className="rounded-xl border border-border bg-muted/40 p-4">
+            <h3 className="text-sm font-bold">بيانات خاصة — تظهر لإدارة المنصة فقط</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              لن تُعرض هذه البيانات في صفحة المشاريع، وتُسلَّم للشركة العقارية فقط بعد اعتماد الربط
+              وسداد عمولة المنصة.
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label className="text-xs">رقم هاتفك للتواصل</Label>
+                <Input
+                  className="mt-2"
+                  inputMode="tel"
+                  value={form.owner_phone}
+                  onChange={(e) => set("owner_phone")(e.target.value)}
+                  placeholder="0912345678"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">موقع العقار الدقيق</Label>
+                <Input
+                  className="mt-2"
+                  value={form.location_details}
+                  onChange={(e) => set("location_details")(e.target.value)}
+                  placeholder="أمدرمان — ودنوباوي، مربع 5، خلف مسجد النور"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="text-xs">وصف تفصيلي للموقع والعقار</Label>
+                <Textarea
+                  className="mt-2 min-h-24"
+                  value={form.property_details}
+                  onChange={(e) => set("property_details")(e.target.value)}
+                  placeholder="منزل من طابق واحد، مدخل من الشارع الرئيسي، أقرب علامة مميزة..."
+                />
+              </div>
+            </div>
+          </div>
+
 
           <div className="rounded-xl border border-gold/40 bg-gold/5 p-4">
             <h3 className="text-sm font-bold">المرفقات المطلوبة (إجبارية)</h3>

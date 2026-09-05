@@ -92,33 +92,63 @@ export type Database = {
       funding_interests: {
         Row: {
           amount: number
+          commission_amount: number
+          commission_paid_at: string | null
+          company_location: string
+          company_name: string
+          company_notes: string
+          company_phone: string
           created_at: string
           id: string
           investor_id: string
           message: string
+          payment_method: string
+          proposed_works: string
           request_id: string
+          scope_of_work: string
           status: string
           updated_at: string
+          warranty: string
         }
         Insert: {
           amount?: number
+          commission_amount?: number
+          commission_paid_at?: string | null
+          company_location?: string
+          company_name?: string
+          company_notes?: string
+          company_phone?: string
           created_at?: string
           id?: string
           investor_id: string
           message?: string
+          payment_method?: string
+          proposed_works?: string
           request_id: string
+          scope_of_work?: string
           status?: string
           updated_at?: string
+          warranty?: string
         }
         Update: {
           amount?: number
+          commission_amount?: number
+          commission_paid_at?: string | null
+          company_location?: string
+          company_name?: string
+          company_notes?: string
+          company_phone?: string
           created_at?: string
           id?: string
           investor_id?: string
           message?: string
+          payment_method?: string
+          proposed_works?: string
           request_id?: string
+          scope_of_work?: string
           status?: string
           updated_at?: string
+          warranty?: string
         }
         Relationships: [
           {
@@ -288,6 +318,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      request_private_details: {
+        Row: {
+          created_at: string
+          location_details: string
+          owner_phone: string
+          property_details: string
+          request_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          location_details?: string
+          owner_phone?: string
+          property_details?: string
+          request_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          location_details?: string
+          owner_phone?: string
+          property_details?: string
+          request_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_private_details_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: true
+            referencedRelation: "property_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

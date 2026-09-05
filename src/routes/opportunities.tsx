@@ -23,7 +23,7 @@ import {
   conditionOptions,
   commissionNote,
   costLabel,
-  createInterest,
+  submitCompanyOffer,
   defaultOpportunitiesTitle,
   defaultOpportunitiesSubtitle,
   fetchOpportunities,
@@ -104,33 +104,78 @@ function OpportunitiesPage() {
       (o.district + o.city + o.damage_description + o.title).includes(applied.query.trim()),
   );
 
-  const handleInterest = async (id: string, amount: number, code: string) => {
+  const [offerFor, setOfferFor] = useState<{ id: string; code: string; amount: number } | null>(
+    null,
+  );
+  const [offer, setOffer] = useState({
+    company_name: "",
+    company_phone: "",
+    company_location: "",
+    scope_of_work: "",
+    proposed_works: "",
+    payment_method: "",
+    warranty: "",
+    company_notes: "",
+  });
+  const setOfferField = (k: keyof typeof offer) => (v: string) =>
+    setOffer((o) => ({ ...o, [k]: v }));
+
+  const openOffer = (id: string, amount: number, code: string) => {
     if (!user) {
       toast.info("سجّل الدخول أولاً", { description: "هذه الخدمة للشركات العقارية الموثقة." });
       return;
     }
-    setPending(id);
+    setOfferFor({ id, code, amount });
+  };
+
+  const submitOffer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !offerFor) return;
+    const required: [string, string][] = [
+      ["اسم الشركة", offer.company_name],
+      ["رقم هاتف الشركة", offer.company_phone],
+      ["موقع الشركة", offer.company_location],
+      ["نطاق العمل", offer.scope_of_work],
+      ["الأعمال المقترحة", offer.proposed_works],
+      ["طريقة الدفع", offer.payment_method],
+      ["الضمان", offer.warranty],
+    ];
+    const missing = required.filter(([, v]) => !v.trim()).map(([k]) => k);
+    if (missing.length > 0) {
+      toast.error("أكمل بيانات العرض", { description: `مطلوب: ${missing.join("، ")}` });
+      return;
+    }
+    setPending(offerFor.id);
     try {
-      await createInterest({
-        request_id: id,
+      await submitCompanyOffer({
+        request_id: offerFor.id,
         investor_id: user.id,
-        amount,
-        message: "نريد العمل على هذا المشروع",
+        amount: offerFor.amount,
+        company_name: offer.company_name.trim(),
+        company_phone: offer.company_phone.trim(),
+        company_location: offer.company_location.trim(),
+        scope_of_work: offer.scope_of_work.trim(),
+        proposed_works: offer.proposed_works.trim(),
+        payment_method: offer.payment_method.trim(),
+        warranty: offer.warranty.trim(),
+        company_notes: offer.company_notes.trim(),
       });
       await queryClient.invalidateQueries({ queryKey: ["my-interests"] });
-      toast.success("تم إرسال طلبك", {
-        description: `سيتواصل معك مشرف المنصة لمراجعة ربط المشروع ${code}.`,
+      toast.success("تم إرسال عرضكم", {
+        description: `ستراجعه سينرجي ثم تعرضه على صاحب المشروع ${offerFor.code}.`,
       });
+      setOfferFor(null);
     } catch (err) {
       const message = (err as Error).message;
       toast.error(
-        message.includes("duplicate") ? "سبق أن أرسلت طلباً لهذا المشروع" : "تعذر إرسال الطلب",
+        message.includes("duplicate") ? "سبق أن أرسلت عرضاً لهذا المشروع" : "تعذر إرسال العرض",
         { description: message.includes("duplicate") ? undefined : message },
       );
     } finally {
       setPending(null);
     }
   };
+
 
   return (
     <SiteLayout>
@@ -298,7 +343,7 @@ function OpportunitiesPage() {
                     variant="gold"
                     className="mt-5 w-full"
                     disabled={pending === o.id}
-                    onClick={() => handleInterest(o.id, Number(o.funding_needed), o.code)}
+                    onClick={() => openOffer(o.id, Number(o.funding_needed), o.code)}
                   >
                     {pending === o.id ? "جارٍ الإرسال..." : "نريد العمل على هذا المشروع"}
                   </Button>
