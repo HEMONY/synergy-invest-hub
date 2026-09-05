@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
+import type { Tables, TablesUpdate } from "@/integrations/supabase/types";
 
 export type PropertyRequest = Tables<"property_requests">;
 export type FundingInterest = Tables<"funding_interests">;
