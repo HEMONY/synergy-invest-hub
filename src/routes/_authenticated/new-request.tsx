@@ -115,7 +115,11 @@ function NewRequestPage() {
     funding_needed: "",
     expected_return: "",
     return_notes: "",
+    owner_phone: "",
+    location_details: "",
+    property_details: "",
   });
+
 
   const [files, setFiles] = useState<Record<string, File | null>>({
     property_photo: null,
