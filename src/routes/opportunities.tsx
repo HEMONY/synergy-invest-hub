@@ -8,7 +8,16 @@ import { PageHeader, SiteLayout } from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 import {
   Select,
   SelectContent,
@@ -368,6 +377,108 @@ function OpportunitiesPage() {
           )}
         </section>
       </div>
+
+      <Dialog open={!!offerFor} onOpenChange={(open) => !open && setOfferFor(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>عرض العمل على المشروع {offerFor?.code}</DialogTitle>
+            <DialogDescription>
+              أكمل بيانات شركتكم وتفاصيل العرض. تراجعه سينرجي ثم تعرضه على صاحب المشروع.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form className="space-y-3" onSubmit={submitOffer}>
+            <div>
+              <Label className="text-xs">اسم الشركة</Label>
+              <Input
+                className="mt-2"
+                value={offer.company_name}
+                onChange={(e) => setOfferField("company_name")(e.target.value)}
+                placeholder="شركة النور للمقاولات"
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className="text-xs">رقم هاتف الشركة</Label>
+                <Input
+                  className="mt-2"
+                  inputMode="tel"
+                  value={offer.company_phone}
+                  onChange={(e) => setOfferField("company_phone")(e.target.value)}
+                  placeholder="0912345678"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">موقع الشركة الدقيق</Label>
+                <Input
+                  className="mt-2"
+                  value={offer.company_location}
+                  onChange={(e) => setOfferField("company_location")(e.target.value)}
+                  placeholder="الخرطوم — شارع الستين، عمارة رقم 4"
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">نطاق العمل</Label>
+              <Input
+                className="mt-2"
+                value={offer.scope_of_work}
+                onChange={(e) => setOfferField("scope_of_work")(e.target.value)}
+                placeholder="إعادة تأهيل العقار بالكامل"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">الأعمال المقترحة</Label>
+              <Textarea
+                className="mt-2 min-h-20"
+                value={offer.proposed_works}
+                onChange={(e) => setOfferField("proposed_works")(e.target.value)}
+                placeholder="ترميم، كهرباء، سباكة وتشطيبات"
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className="text-xs">طريقة الدفع</Label>
+                <Input
+                  className="mt-2"
+                  value={offer.payment_method}
+                  onChange={(e) => setOfferField("payment_method")(e.target.value)}
+                  placeholder="دفعات حسب مراحل الإنجاز"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">الضمان</Label>
+                <Input
+                  className="mt-2"
+                  value={offer.warranty}
+                  onChange={(e) => setOfferField("warranty")(e.target.value)}
+                  placeholder="ضمان سنة"
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">ملاحظات الشركة (اختياري)</Label>
+              <Textarea
+                className="mt-2 min-h-16"
+                value={offer.company_notes}
+                onChange={(e) => setOfferField("company_notes")(e.target.value)}
+                placeholder="أي أعمال إضافية يتم الاتفاق عليها مسبقاً"
+              />
+            </div>
+            <p className="text-[11px] leading-5 text-muted-foreground">{commissionNote}</p>
+
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={() => setOfferFor(null)}>
+                إلغاء
+              </Button>
+              <Button type="submit" variant="gold" disabled={pending === offerFor?.id}>
+                {pending === offerFor?.id ? "جارٍ الإرسال..." : "إرسال العرض"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </SiteLayout>
+
   );
 }
