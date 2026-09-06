@@ -547,9 +547,146 @@ function useRequestMutation(successMessage: string) {
   });
 }
 
+function num(v: string) {
+  const n = Number(v.replace(/[^\d.]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function RequestFinancials({
+  request,
+  privateDetails,
+}: {
+  request: PropertyRequest;
+  privateDetails?: { owner_phone: string; location_details: string; property_details: string };
+}) {
+  const mutate = useRequestMutation("تم حفظ بيانات المشروع");
+  const [form, setForm] = useState({
+    estimated_value: String(request.estimated_value ?? 0),
+    rehab_cost: String(request.rehab_cost ?? 0),
+    funding_needed: String(request.funding_needed ?? 0),
+    expected_return: String(request.expected_return ?? 0),
+    duration_months: String(request.duration_months ?? 0),
+    duration_days: String(request.duration_days ?? 0),
+  });
+  const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const patch = {
+    estimated_value: num(form.estimated_value),
+    rehab_cost: num(form.rehab_cost),
+    funding_needed: num(form.funding_needed),
+    expected_return: num(form.expected_return),
+    duration_months: Math.round(num(form.duration_months)),
+    duration_days: Math.round(num(form.duration_days)),
+  };
+
+  const missing = [
+    patch.estimated_value <= 0 && "القيمة التقديرية",
+    patch.rehab_cost <= 0 && "تكلفة المشروع",
+    patch.funding_needed <= 0 && "التمويل المطلوب",
+    patch.expected_return <= 0 && "العائد المتوقع",
+    patch.duration_months <= 0 && patch.duration_days <= 0 && "مدة التنفيذ",
+  ].filter(Boolean) as string[];
+
+  const fields: [keyof typeof form, string][] = [
+    ["estimated_value", "القيمة التقديرية للعقار"],
+    ["rehab_cost", "تكلفة المشروع"],
+    ["funding_needed", "التمويل المطلوب"],
+    ["expected_return", "العائد المتوقع %"],
+    ["duration_months", "المدة (أشهر)"],
+    ["duration_days", "المدة (أيام)"],
+  ];
+
+  return (
+    <div className="mt-4 space-y-3 rounded-xl border border-border p-4">
+      {privateDetails && (
+        <div className="rounded-lg bg-muted/60 p-3 text-xs leading-6">
+          <p className="font-bold text-gold">بيانات خاصة (للإدارة فقط)</p>
+          <p>هاتف صاحب الطلب: {privateDetails.owner_phone || "—"}</p>
+          <p>الموقع الدقيق: {privateDetails.location_details || "—"}</p>
+          <p>وصف العقار: {privateDetails.property_details || "—"}</p>
+        </div>
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {fields.map(([key, label]) => (
+          <div key={key}>
+            <Label className="text-xs">{label}</Label>
+            <Input
+              className="mt-2"
+              inputMode="numeric"
+              value={form[key]}
+              onChange={(e) => set(key)(e.target.value)}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant="outlineGold"
+          onClick={() => mutate.mutate({ request, patch })}
+        >
+          حفظ البيانات المالية
+        </Button>
+        <Button
+          size="sm"
+          variant="gold"
+          onClick={() => {
+            if (missing.length > 0) {
+              toast.error("أكمل البيانات قبل النشر", { description: missing.join("، ") });
+              return;
+            }
+            mutate.mutate({
+              request,
+              patch: {
+                ...patch,
+                status: "published",
+                stage_index: Math.max(request.stage_index, 2),
+              },
+              notify: {
+                title: "تم اعتماد ونشر طلبك",
+                body: `طلبك ${request.code} أصبح متاحاً لشركات القطاع العقاري.`,
+              },
+            });
+          }}
+        >
+          اعتماد ونشر
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => mutate.mutate({ request, patch: { status: "review" } })}
+        >
+          إخفاء
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() =>
+            mutate.mutate({
+              request,
+              patch: { status: "rejected" },
+              notify: {
+                title: "تم رفض الطلب",
+                body: `للأسف تم رفض الطلب ${request.code} بعد المراجعة.`,
+              },
+            })
+          }
+        >
+          رفض
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function RequestsSection() {
   const { data: requests = [], isLoading } = useRequests();
-  const mutate = useRequestMutation("تم تحديث حالة الطلب");
+  const { data: privates = [] } = useQuery({
+    queryKey: ["admin-request-private"],
+    queryFn: fetchAllRequestPrivateDetails,
+  });
 
   if (isLoading) return <p className="text-sm text-muted-foreground">جارٍ التحميل...</p>;
   if (requests.length === 0)
@@ -572,55 +709,23 @@ function RequestsSection() {
           <p className="mt-2 line-clamp-2 text-sm leading-7 text-muted-foreground">
             {o.damage_description}
           </p>
-          <p className="mt-3 text-sm font-bold text-gold">
-            {formatSAR(Number(o.funding_needed))} · عائد {o.expected_return}%
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="gold"
-              onClick={() =>
-                mutate.mutate({
-                  request: o,
-                  patch: { status: "published", stage_index: Math.max(o.stage_index, 2) },
-                  notify: {
-                    title: "تم اعتماد ونشر طلبك",
-                    body: `طلبك ${o.code} أصبح متاحاً للشركات العقارية في صفحة الفرص.`,
-                  },
-                })
-              }
-            >
-              اعتماد ونشر
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => mutate.mutate({ request: o, patch: { status: "review" } })}
-            >
-              إخفاء
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                mutate.mutate({
-                  request: o,
-                  patch: { status: "rejected" },
-                  notify: {
-                    title: "تم رفض الطلب",
-                    body: `للأسف تم رفض الطلب ${o.code} بعد المراجعة.`,
-                  },
-                })
-              }
-            >
-              رفض
-            </Button>
-          </div>
+
+          <RequestFinancials
+            request={o}
+            privateDetails={privates.find((p) => p.request_id === o.id)}
+          />
         </article>
       ))}
     </div>
   );
 }
+
+const matchingFlow: { status: string; label: string; next?: string }[] = [
+  { status: "pending", label: "بدء المراجعة", next: "under_review" },
+  { status: "under_review", label: "عرض على صاحب المشروع", next: "presented" },
+  { status: "owner_approved", label: "اعتماد الربط", next: "approved" },
+  { status: "approved", label: "تأكيد سداد العمولة", next: "commission_paid" },
+];
 
 function MatchingSection() {
   const queryClient = useQueryClient();
@@ -628,20 +733,60 @@ function MatchingSection() {
     queryKey: ["admin-interests"],
     queryFn: fetchAllInterests,
   });
+  const { data: privates = [] } = useQuery({
+    queryKey: ["admin-request-private"],
+    queryFn: fetchAllRequestPrivateDetails,
+  });
+  const [commission, setCommission] = useState<Record<string, string>>({});
 
   const mutate = useMutation({
     mutationFn: async ({
       id,
       status,
       requestId,
+      ownerId,
+      investorId,
+      code,
     }: {
       id: string;
       status: string;
       requestId: string;
+      ownerId?: string;
+      investorId: string;
+      code: string;
     }) => {
       await updateInterest(id, status);
+      if (status === "presented" && ownerId) {
+        await notifyUser(
+          ownerId,
+          "request",
+          "عرض جديد على مشروعك",
+          `وصل عرض من شركة عقارية على المشروع ${code} — راجعه من صفحة طلباتي.`,
+        );
+      }
       if (status === "approved") {
         await updateRequest(requestId, { status: "matched", stage_index: 4 });
+        await notifyUser(
+          investorId,
+          "request",
+          "تم اعتماد الربط",
+          `تم اعتماد ربطكم بالمشروع ${code} — يرجى سداد عمولة سينرجي.`,
+        );
+      }
+      if (status === "commission_paid") {
+        await notifyUser(
+          investorId,
+          "request",
+          "تم تأكيد سداد العمولة",
+          `أصبحت بيانات التواصل الخاصة بالمشروع ${code} متاحة لكم.`,
+        );
+        if (ownerId)
+          await notifyUser(
+            ownerId,
+            "request",
+            "يمكنك البدء مع الشركة",
+            `تم سداد عمولة سينرجي للمشروع ${code} — بيانات تواصل الشركة متاحة الآن.`,
+          );
       }
     },
     onSuccess: () => {
@@ -655,12 +800,14 @@ function MatchingSection() {
 
   if (isLoading) return <p className="text-sm text-muted-foreground">جارٍ التحميل...</p>;
   if (interests.length === 0)
-    return <p className="text-sm text-muted-foreground">لا توجد رغبات تمويل بعد.</p>;
+    return <p className="text-sm text-muted-foreground">لا توجد عروض شركات بعد.</p>;
 
   return (
     <div className="space-y-4">
       {interests.map((i) => {
         const r = i.property_requests;
+        const pd = privates.find((p) => p.request_id === i.request_id);
+        const step = matchingFlow.find((s) => s.status === i.status);
         return (
           <article key={i.id} className="card-surface p-6">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
@@ -672,27 +819,120 @@ function MatchingSection() {
               </span>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              حالة الربط: {i.status === "pending" ? "قيد المراجعة" : i.status} · {timeAgo(i.created_at)}
+              {interestStatusLabels[i.status] ?? i.status} · {timeAgo(i.created_at)}
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
+
+            <dl className="mt-4 grid gap-2 rounded-xl bg-muted/60 p-4 text-xs leading-6 sm:grid-cols-2">
+              <div>
+                <dt className="text-muted-foreground">اسم الشركة</dt>
+                <dd className="font-bold">{i.company_name || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">هاتف الشركة</dt>
+                <dd className="font-bold">{i.company_phone || "—"}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">موقع الشركة</dt>
+                <dd>{i.company_location || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">نطاق العمل</dt>
+                <dd>{i.scope_of_work || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">الأعمال المقترحة</dt>
+                <dd>{i.proposed_works || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">طريقة الدفع</dt>
+                <dd>{i.payment_method || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">الضمان</dt>
+                <dd>{i.warranty || "—"}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">ملاحظات الشركة</dt>
+                <dd>{i.company_notes || "—"}</dd>
+              </div>
+            </dl>
+
+            {pd && (
+              <div className="mt-3 rounded-xl border border-border p-3 text-xs leading-6">
+                <p className="font-bold text-gold">بيانات صاحب المشروع (للإدارة)</p>
+                <p>الهاتف: {pd.owner_phone || "—"}</p>
+                <p>الموقع الدقيق: {pd.location_details || "—"}</p>
+              </div>
+            )}
+
+            <div className="mt-4 flex flex-wrap items-end gap-2">
+              <div>
+                <Label className="text-xs">عمولة سينرجي</Label>
+                <Input
+                  className="mt-2 w-40"
+                  inputMode="numeric"
+                  value={commission[i.id] ?? String(i.commission_amount ?? 0)}
+                  onChange={(e) =>
+                    setCommission((c) => ({ ...c, [i.id]: e.target.value }))
+                  }
+                />
+              </div>
               <Button
                 size="sm"
-                variant="gold"
-                onClick={() =>
-                  mutate.mutate({ id: i.id, status: "approved", requestId: i.request_id })
-                }
+                variant="outlineGold"
+                onClick={async () => {
+                  try {
+                    await setCommissionAmount(
+                      i.id,
+                      num(commission[i.id] ?? String(i.commission_amount ?? 0)),
+                    );
+                    queryClient.invalidateQueries({ queryKey: ["admin-interests"] });
+                    toast.success("تم حفظ قيمة العمولة");
+                  } catch (err) {
+                    toast.error("تعذر حفظ العمولة", { description: (err as Error).message });
+                  }
+                }}
               >
-                اعتماد الربط
+                حفظ العمولة
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  mutate.mutate({ id: i.id, status: "rejected", requestId: i.request_id })
-                }
-              >
-                رفض
-              </Button>
+
+              {step?.next && (
+                <Button
+                  size="sm"
+                  variant="gold"
+                  onClick={() =>
+                    mutate.mutate({
+                      id: i.id,
+                      status: step.next!,
+                      requestId: i.request_id,
+                      ownerId: r?.owner_id,
+                      investorId: i.investor_id,
+                      code: r?.code ?? "",
+                    })
+                  }
+                >
+                  {step.label}
+                </Button>
+              )}
+
+              {i.status !== "commission_paid" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    mutate.mutate({
+                      id: i.id,
+                      status: "rejected",
+                      requestId: i.request_id,
+                      ownerId: r?.owner_id,
+                      investorId: i.investor_id,
+                      code: r?.code ?? "",
+                    })
+                  }
+                >
+                  رفض العرض
+                </Button>
+              )}
             </div>
           </article>
         );
@@ -700,6 +940,7 @@ function MatchingSection() {
     </div>
   );
 }
+
 
 function ProjectsSection() {
   const { data: requests = [] } = useRequests();
