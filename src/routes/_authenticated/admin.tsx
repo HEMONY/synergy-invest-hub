@@ -729,7 +729,9 @@ const matchingFlow: { status: string; label: string; next?: string }[] = [
   { status: "pending", label: "بدء المراجعة", next: "under_review" },
   { status: "under_review", label: "عرض على صاحب المشروع", next: "presented" },
   { status: "owner_approved", label: "اعتماد الربط", next: "approved" },
-  { status: "approved", label: "تأكيد سداد العمولة", next: "commission_paid" },
+  { status: "approved", label: "تأكيد استلام العمولة", next: "commission_confirmed" },
+  { status: "commission_reported", label: "تأكيد استلام العمولة", next: "commission_confirmed" },
+  { status: "commission_confirmed", label: "فتح التواصل", next: "commission_paid" },
 ];
 
 function MatchingSection() {
@@ -776,6 +778,14 @@ function MatchingSection() {
           "request",
           "تم اعتماد الربط",
           `تم اعتماد ربطكم بالمشروع ${code} — يرجى سداد عمولة سينرجي.`,
+        );
+      }
+      if (status === "commission_confirmed") {
+        await notifyUser(
+          investorId,
+          "request",
+          "تم تأكيد سداد العمولة",
+          `تم تأكيد سداد عمولة سينرجي للمشروع ${code} — سيتم فتح التواصل مع صاحب المشروع.`,
         );
       }
       if (status === "commission_paid") {
