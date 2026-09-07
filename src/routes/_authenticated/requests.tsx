@@ -4,6 +4,7 @@ import { Check, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { CompanyOffersPanel, OwnerOffersPanel } from "@/components/OffersPanels";
 import { PageHeader, SiteLayout } from "@/components/SiteLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -203,7 +204,23 @@ function RequestsPage() {
           <TabsList>
             <TabsTrigger value="requests">طلباتي</TabsTrigger>
             <TabsTrigger value="projects">مشاريعي</TabsTrigger>
+            <TabsTrigger value="offers">العروض والربط</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="offers" className="mt-6 space-y-4">
+            {user && (
+              <>
+                <h3 className="text-sm font-bold text-muted-foreground">
+                  عروض الشركات على مشاريعي
+                </h3>
+                <OwnerOffersPanel ownerId={user.id} />
+                <h3 className="pt-4 text-sm font-bold text-muted-foreground">
+                  العروض التي قدّمتها كشركة عقارية
+                </h3>
+                <CompanyOffersPanel userId={user.id} />
+              </>
+            )}
+          </TabsContent>
 
           <TabsContent value="requests" className="mt-6 space-y-4">
             <div className="flex justify-end">

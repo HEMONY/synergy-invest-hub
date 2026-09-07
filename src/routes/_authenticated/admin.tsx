@@ -560,7 +560,9 @@ function RequestFinancials({
   privateDetails,
 }: {
   request: PropertyRequest;
-  privateDetails?: { owner_phone: string; location_details: string; property_details: string };
+  privateDetails?:
+    | { owner_phone: string; location_details: string; property_details: string }
+    | undefined;
 }) {
   const mutate = useRequestMutation("تم حفظ بيانات المشروع");
   const [form, setForm] = useState({
