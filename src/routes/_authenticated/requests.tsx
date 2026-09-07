@@ -4,6 +4,7 @@ import { Check, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { CompanyOffersPanel, OwnerOffersPanel } from "@/components/OffersPanels";
 import { PageHeader, SiteLayout } from "@/components/SiteLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
