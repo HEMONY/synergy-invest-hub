@@ -8,6 +8,7 @@ import {
   fetchMyInterests,
   fetchOffersForMyRequests,
   fetchRequestPrivateDetails,
+  reportCommissionPayment,
   formatSAR,
   interestStatusLabels,
   notifyUser,
@@ -37,8 +38,10 @@ function OfferDetails({ offer, showContact }: { offer: OfferRow; showContact: bo
   return (
     <dl className="mt-4 grid gap-2 rounded-xl bg-muted/60 p-4 text-xs leading-6 sm:grid-cols-2">
       <div>
-        <dt className="text-muted-foreground">اسم الشركة</dt>
-        <dd className="font-bold">{offer.company_name || "—"}</dd>
+        <dt className="text-muted-foreground">الشركة</dt>
+        <dd className="font-bold">
+          {showContact ? offer.company_name || "—" : "شركة عقارية موثوقة (تُكشف بعد فتح التواصل)"}
+        </dd>
       </div>
       <div>
         <dt className="text-muted-foreground">نطاق العمل</dt>
@@ -166,6 +169,7 @@ export function OwnerOffersPanel({ ownerId }: { ownerId: string }) {
 
 /** العروض التي قدّمتها الشركة العقارية. */
 export function CompanyOffersPanel({ userId }: { userId: string }) {
+  const queryClient = useQueryClient();
   const { data: offers = [], isLoading } = useQuery({
     queryKey: ["my-interests", userId],
     queryFn: () => fetchMyInterests(userId),
@@ -218,6 +222,46 @@ export function CompanyOffersPanel({ userId }: { userId: string }) {
           {Number(o.commission_amount) > 0 && (
             <p className="mt-2 text-xs font-semibold text-gold">
               عمولة سينرجي: {formatSAR(Number(o.commission_amount))}
+            </p>
+          )}
+
+          {o.status === "approved" && (
+            <div className="mt-4 rounded-xl border border-gold/40 bg-gold/5 p-3 text-xs leading-6">
+              <p className="font-bold text-gold">عمولة مستحقة</p>
+              <p>
+                وافق صاحب المشروع واعتمدت سينرجي الربط — سدّد العمولة ثم أبلغنا لتأكيد الدفع وفتح
+                التواصل.
+              </p>
+              <Button
+                className="mt-3"
+                size="sm"
+                variant="gold"
+                onClick={async () => {
+                  try {
+                    await reportCommissionPayment(o.id);
+                    await notifyUser(
+                      userId,
+                      "payment",
+                      "تم إرسال إشعار السداد",
+                      "سيتم تأكيد الدفع من سينرجي ثم فتح التواصل.",
+                    );
+                    queryClient.invalidateQueries({ queryKey: ["my-interests", userId] });
+                    toast.success("تم إبلاغ سينرجي بالسداد");
+                  } catch (err) {
+                    toast.error("تعذر إرسال الإشعار", { description: (err as Error).message });
+                  }
+                }}
+              >
+                دفعت العمولة — إبلاغ سينرجي
+              </Button>
+            </div>
+          )}
+
+          {(o.status === "commission_reported" || o.status === "commission_confirmed") && (
+            <p className="mt-4 rounded-xl border border-border p-3 text-xs leading-6 text-muted-foreground">
+              {o.status === "commission_reported"
+                ? "بانتظار تأكيد سينرجي لاستلام العمولة."
+                : "تم تأكيد السداد — سيتم فتح التواصل قريباً."}
             </p>
           )}
 

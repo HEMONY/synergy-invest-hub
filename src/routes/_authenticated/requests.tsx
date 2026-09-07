@@ -205,6 +205,7 @@ function RequestsPage() {
             <TabsTrigger value="requests">طلباتي</TabsTrigger>
             <TabsTrigger value="projects">مشاريعي</TabsTrigger>
             <TabsTrigger value="offers">العروض والربط</TabsTrigger>
+            <TabsTrigger value="commissions">العمولات</TabsTrigger>
           </TabsList>
 
           <TabsContent value="offers" className="mt-6 space-y-4">
@@ -220,6 +221,14 @@ function RequestsPage() {
                 <CompanyOffersPanel userId={user.id} />
               </>
             )}
+          </TabsContent>
+
+          <TabsContent value="commissions" className="mt-6 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              عمولات سينرجي المستحقة على عروضك المعتمدة — بعد السداد وتأكيده يتم فتح التواصل مع صاحب
+              المشروع.
+            </p>
+            {user && <CompanyOffersPanel userId={user.id} />}
           </TabsContent>
 
           <TabsContent value="requests" className="mt-6 space-y-4">
