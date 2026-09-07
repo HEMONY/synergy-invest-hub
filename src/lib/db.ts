@@ -545,6 +545,8 @@ export const interestStatusLabels: Record<string, string> = {
   owner_approved: "وافق صاحب المشروع",
   owner_rejected: "رفضه صاحب المشروع",
   approved: "تم اعتماد الربط — بانتظار سداد العمولة",
+  commission_reported: "أبلغت الشركة بسداد العمولة — بانتظار تأكيد سينرجي",
+  commission_confirmed: "تم تأكيد السداد — بانتظار فتح التواصل",
   commission_paid: "تم سداد العمولة — بيانات التواصل متاحة",
   rejected: "مرفوض",
 };
@@ -589,6 +591,15 @@ export async function fetchOffersForMyRequests(ownerId: string) {
     ...i,
     request: (requests ?? []).find((r) => r.id === i.request_id) ?? null,
   }));
+}
+
+/** الشركة تُبلغ سينرجي بسداد العمولة. */
+export async function reportCommissionPayment(id: string) {
+  const { error } = await supabase
+    .from("funding_interests")
+    .update({ status: "commission_reported" })
+    .eq("id", id);
+  if (error) throw error;
 }
 
 export async function setCommissionAmount(id: string, amount: number) {
