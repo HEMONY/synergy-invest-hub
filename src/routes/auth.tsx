@@ -85,7 +85,7 @@ function AuthPage() {
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        
         data: { full_name: parsed.data.fullName, account_type: role },
       },
     });
