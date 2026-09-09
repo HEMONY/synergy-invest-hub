@@ -102,8 +102,8 @@ export function formatDuration(months: number, days = 0) {
   const parts: string[] = [];
   const m = Number(months) || 0;
   const d = Number(days) || 0;
-  if (m > 0) parts.push(`${m} ${m === 1 ? "شهر" : m === 2 ? "شهرين" : m <= 10 ? "أشهر" : "شهر"}`);
-  if (d > 0) parts.push(`${d} ${d === 1 ? "يوم" : d === 2 ? "يومين" : "يوم"}`);
+  if (m > 0) parts.push(`${m === 1 ? "شهر" : m === 2 ? "شهرين" : m <= 10 ? "أشهر" : "شهر"} ${m}`);
+  if (d > 0) parts.push(`${d === 1 ? "يوم" : d === 2 ? "يومين" : "يوم"} ${d}`);
   return parts.length ? parts.join(" و ") : "غير محددة";
 }
 
@@ -136,7 +136,7 @@ export async function fetchOpportunities() {
     .from("property_requests")
     .select("*")
     .in("status", ["published", "matched"])
-    .order("created_at", { ascending: false });
+    .order("updated_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
 }

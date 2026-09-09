@@ -587,7 +587,7 @@ function RequestFinancials({
   const missing = [
     patch.estimated_value <= 0 && "القيمة التقديرية",
     patch.rehab_cost <= 0 && "تكلفة المشروع",
-    patch.funding_needed <= 0 && "التمويل المطلوب",
+    //patch.funding_needed <= 0 && "التمويل المطلوب",
     patch.expected_return <= 0 && "العائد المتوقع",
     patch.duration_months <= 0 && patch.duration_days <= 0 && "مدة التنفيذ",
   ].filter(Boolean) as string[];
@@ -595,7 +595,7 @@ function RequestFinancials({
   const fields: [keyof typeof form, string][] = [
     ["estimated_value", "القيمة التقديرية للعقار"],
     ["rehab_cost", "تكلفة المشروع"],
-    ["funding_needed", "التمويل المطلوب"],
+    //["funding_needed", "التمويل المطلوب"],
     ["expected_return", "العائد المتوقع %"],
     ["duration_months", "المدة (أشهر)"],
     ["duration_days", "المدة (أيام)"],
@@ -1623,14 +1623,13 @@ function PaymentsSection() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label="إجمالي التمويل المرتبط" value={formatSAR(totalFunding)} icon={Wallet} />
+        <Stat label="إجمالي قيمة المشاريع" value={formatSAR(totalFunding)} icon={Wallet} />
         <Stat label={`عمولة المنصة (${rate}%)`} value={formatSAR(totalCommission)} icon={Receipt} />
         <Stat label="مشاريع نشطة" value={String(active.length)} icon={BarChart3} />
       </div>
 
       <section className="card-surface p-6">
         <h3 className="text-base font-bold">حاسبة العمولة</h3>
-        <p className="mt-1 text-xs text-muted-foreground">{commissionNote}</p>
         <div className="mt-4 max-w-xs">
           <Label className="text-xs">نسبة العمولة (%)</Label>
           <Input
@@ -1648,7 +1647,7 @@ function PaymentsSection() {
           <thead className="text-xs text-muted-foreground">
             <tr>
               <th className="pb-3">المشروع</th>
-              <th className="pb-3">ربح المشروع</th>
+              <th className="pb-3">قيمة المشروع</th>
               <th className="pb-3">العمولة</th>
               <th className="pb-3">القسط الشهري</th>
             </tr>

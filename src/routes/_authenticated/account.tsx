@@ -81,7 +81,7 @@ function AccountPage() {
   const accountLabel =
     profile?.account_type === "investor" ? "شركات القطاع العقاري" : "صاحب عقار";
 
-  const verified = profile?.verification_status === "approved";
+  const verified = profile?.verification_status === "verified";//const verified = profile?.verification_status === "approved";
 
   const saveProfile = async () => {
     if (!userId) return;
@@ -562,8 +562,7 @@ function SettingsPanel({ onSignOut }: { onSignOut: () => Promise<void> }) {
           <Download className="size-5 text-gold" /> المدفوعات
         </h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          لا توجد مدفوعات مباشرة على المستخدم؛ عمولة المنصة تُحصَّل من الشركة العقارية بنظام
-          الأقساط الشهرية حسب نسبة الإنجاز. تفاصيل عملياتك في تبويب «عملياتي».
+          لا توجد مدفوعات مباشرة على المستخدم؛ 
         </p>
       </section>
 
@@ -572,7 +571,7 @@ function SettingsPanel({ onSignOut }: { onSignOut: () => Promise<void> }) {
           <LifeBuoy className="size-5 text-gold" /> الدعم والمساعدة
         </h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          لأي استفسار افتح تبويب «الدعم» وأرسل رسالتك، أو راسلنا على support@synergy.sd.
+          لأي استفسار افتح تبويب «الدعم» وأرسل رسالتك، أو راسلنا على synergy0123456@gmail.com.
         </p>
       </section>
 
@@ -580,7 +579,7 @@ function SettingsPanel({ onSignOut }: { onSignOut: () => Promise<void> }) {
         <h3 className="text-base font-bold">الشروط والأحكام</h3>
         <p className="mt-2 text-sm text-muted-foreground">
           باستخدامك المنصة فأنت توافق على مراجعة الإدارة لبياناتك ومستنداتك، وعلى أن الربط مع
-          الشركات العقارية يتم بإشراف المنصة وبنظام الأقساط المتفق عليه.
+          الشركات العقارية يتم بإشراف المنصة .
         </p>
       </section>
 

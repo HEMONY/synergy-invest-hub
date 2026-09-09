@@ -204,7 +204,7 @@ function RequestsPage() {
           <TabsList>
             <TabsTrigger value="requests">طلباتي</TabsTrigger>
             <TabsTrigger value="projects">مشاريعي</TabsTrigger>
-            <TabsTrigger value="offers">العروض والربط</TabsTrigger>
+            <TabsTrigger value="offers">العروض</TabsTrigger>
             <TabsTrigger value="commissions">العمولات</TabsTrigger>
           </TabsList>
 

@@ -57,7 +57,7 @@ export function Footer() {
         <div>
           <h3 className="text-sm font-bold text-gold">تواصل معنا</h3>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-            <li>support@synergy.com</li>
+            <li>synergy0123456@gmail.com</li>
             <li dir="ltr" className="text-end">
               +249 96 780 7618
               <br />

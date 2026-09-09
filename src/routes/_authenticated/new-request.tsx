@@ -374,7 +374,6 @@ function NewRequestPage() {
 
           <div className="rounded-xl border border-gold/40 bg-gold/5 p-4">
             <h3 className="text-sm font-bold">المرفقات المطلوبة (إجبارية)</h3>
-            <p className="mt-1 text-xs text-muted-foreground">{commissionNote}</p>
             <div className="mt-4 space-y-3">
               {requiredDocs.map((d) => (
                 <FilePicker

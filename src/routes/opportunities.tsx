@@ -356,9 +356,7 @@ function OpportunitiesPage() {
                   >
                     {pending === o.id ? "جارٍ الإرسال..." : "نريد العمل على هذا المشروع"}
                   </Button>
-                  <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
-                    {commissionNote}
-                  </p>
+                  
                 </article>
               );
             })}
