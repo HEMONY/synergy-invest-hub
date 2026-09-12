@@ -35,6 +35,7 @@ import {
   submitCompanyOffer,
   defaultOpportunitiesTitle,
   defaultOpportunitiesSubtitle,
+  fetchOfferCounts,
   fetchOpportunities,
   fetchOpportunitiesTitle,
   fetchOpportunitiesSubtitle,
@@ -42,6 +43,7 @@ import {
   formatSAR,
   propertyTypes,
   statusLabels,
+  timeAgo,
 } from "@/lib/db";
 
 export const Route = createFileRoute("/opportunities")({
@@ -91,6 +93,10 @@ function OpportunitiesPage() {
   const { data: pageSubtitle } = useQuery({
     queryKey: ["opportunities-subtitle"],
     queryFn: fetchOpportunitiesSubtitle,
+  });
+  const { data: offerCounts = {} } = useQuery({
+    queryKey: ["opportunities-offer-counts"],
+    queryFn: fetchOfferCounts,
   });
 
   const [draft, setDraft] = useState<Filters>(defaultFilters);
@@ -337,16 +343,29 @@ function OpportunitiesPage() {
                   {o.title && (
                     <p className="mt-1 text-sm font-semibold text-muted-foreground">{o.title}</p>
                   )}
-
-                  
+                  {o.damage_description && (
+                    <p className="mt-2 line-clamp-2 text-sm leading-7 text-muted-foreground">
+                      {o.damage_description}
+                    </p>
+                  )}
 
                   <dl className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-muted/60 p-4 text-sm">
-                   
+                    <div>
+                      <dt className="text-xs text-muted-foreground">المساحة</dt>
+                      <dd className="font-bold">{Number(o.area_sqm) || 0} م²</dd>
+                    </div>
                     <div>
                       <dt className="text-xs text-muted-foreground">الحالة</dt>
                       <dd className="font-bold">{statusLabels[o.status] ?? o.status}</dd>
                     </div>
                   </dl>
+
+                  <p className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Clock3 className="size-3.5" /> نُشر {timeAgo(o.published_at ?? o.created_at)}
+                    </span>
+                    <span>عدد الشركات المتقدمة: {offerCounts[o.id] ?? 0}</span>
+                  </p>
 
                   <Button
                     variant="gold"
@@ -358,6 +377,7 @@ function OpportunitiesPage() {
                   </Button>
                   
                 </article>
+
               );
             })}
           </div>

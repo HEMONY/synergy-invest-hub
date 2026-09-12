@@ -9,6 +9,9 @@ export const propertyTypes = ["سكني", "تجاري", "صناعي", "إدار�
 
 export const cities = ["الخرطوم", "أمدرمان", "بحري"] as const;
 
+/** خيارات العملة لحقلي "القيمة التقديرية للعقار" و"تكلفة المشروع". */
+export const currencyOptions = ["جنيه", "دولار"] as const;
+
 export const projectStages = [
   "تم الرفع",
   "قيد المراجعة",
@@ -113,9 +116,13 @@ export function effectiveProgress(progress: number, _stageIndex: number) {
 }
 
 
-/** آلية تحصيل عمولة المنصة. */
+/** آلية تحصيل عمولة المنصة (النموذج القديم على العروض المعتمدة). */
 export const commissionNote =
   "عمولة المنصة تُحصَّل من الشركة العقارية بنظام الأقساط الشهرية حسب نسبة الإنجاز.";
+
+/** آلية تحصيل عمولة المنصة على دفعات المشروع (النموذج الجديد). */
+export const paymentCommissionNote =
+  "تُخصم عمولة المنصة تلقائياً من دفعات المشروع قبل تحويل المبلغ إلى الشركة.";
 
 export const formatSAR = (n: number) => `${Number(n || 0).toLocaleString("en-US")} ج.س`;
 
@@ -139,6 +146,13 @@ export async function fetchOpportunities() {
     .order("updated_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
+}
+
+/** عدد عروض الشركات لكل مشروع — يُستخدم في صفحة البحث عن المشاريع (متاح للجميع). */
+export async function fetchOfferCounts(): Promise<Record<string, number>> {
+  const { data, error } = await supabase.from("request_offer_counts").select("*");
+  if (error) throw error;
+  return Object.fromEntries((data ?? []).map((r) => [r.request_id, r.offer_count]));
 }
 
 export async function fetchMyRequests(userId: string) {
@@ -330,6 +344,55 @@ export async function createInterest(input: {
   if (error) throw error;
 }
 
+/* ---------- مدفوعاتي — دفعات المشروع وعمولة سينرجي ---------- */
+
+export type ProjectPayment = Tables<"project_payments">;
+
+/** نسبة عمولة سينرجي المُخصَّمة تلقائياً من كل دفعة مشروع (تُدار من إعدادات المنصة). */
+export const fetchPaymentCommissionRate = async () =>
+  Number(await fetchSetting("payment_commission_rate", "1")) || 1;
+export const savePaymentCommissionRate = (value: string, userId: string) =>
+  saveSetting("payment_commission_rate", value, userId);
+
+/** كل الدفعات المسجَّلة على مشروع معيّن (للإدارة). */
+export async function fetchProjectPayments(requestId: string) {
+  const { data, error } = await supabase
+    .from("project_payments")
+    .select("*")
+    .eq("request_id", requestId)
+    .order("payment_number", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** مدفوعاتي — كل الدفعات على مشاريع صاحب الطلب، مع اسم/رقم المشروع. */
+export async function fetchMyProjectPayments(ownerId: string) {
+  const { data, error } = await supabase
+    .from("project_payments")
+    .select("*, property_requests!inner(title, code, owner_id)")
+    .eq("property_requests.owner_id", ownerId)
+    .order("paid_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** تسجيل دفعة جديدة على المشروع — تُخصم عمولة سينرجي تلقائياً قبل تحويل الباقي للشركة. */
+export async function createProjectPayment(input: {
+  request_id: string;
+  amount: number;
+  commission_rate: number;
+  paid_at?: string;
+  created_by: string;
+}) {
+  const { data, error } = await supabase
+    .from("project_payments")
+    .insert(input)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 /* ---------- Profile ---------- */
 
 export async function updateMyProfile(
@@ -487,7 +550,7 @@ export async function fetchAllInterests() {
 
 export async function updateRequest(
   id: string,
-  patch: Partial<{ status: string; stage_index: number; progress: number; funding_needed: number }>,
+  patch: Partial<TablesUpdate<"property_requests">>,
 ) {
   const { error } = await supabase.from("property_requests").update(patch).eq("id", id);
   if (error) throw error;

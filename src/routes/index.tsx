@@ -149,8 +149,11 @@ function Index() {
               <h3 className="mt-4 text-base font-bold">
                 {o.city} — {o.district}
               </h3>
+              {o.title && (
+                <p className="mt-1 text-sm font-semibold text-muted-foreground">{o.title}</p>
+              )}
               <p className="mt-1 text-xs text-muted-foreground">
-                {conditionLabels[o.condition] ?? o.condition}
+                {conditionLabels[o.condition] ?? o.condition} · {Number(o.area_sqm) || 0} م²
               </p>
               <p className="mt-2 line-clamp-2 text-sm leading-7 text-muted-foreground">
                 {o.damage_description}

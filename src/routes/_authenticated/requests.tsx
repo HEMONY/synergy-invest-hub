@@ -202,10 +202,12 @@ function RequestsPage() {
       <div className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
         <Tabs defaultValue="requests">
           <TabsList>
-            <TabsTrigger value="requests">طلباتي</TabsTrigger>
+            
+            <TabsTrigger value="commissions">مدفوعاتي</TabsTrigger>
             <TabsTrigger value="projects">مشاريعي</TabsTrigger>
             <TabsTrigger value="offers">العروض</TabsTrigger>
-            <TabsTrigger value="commissions">العمولات</TabsTrigger>
+            <TabsTrigger value="requests">طلباتي</TabsTrigger>
+            
           </TabsList>
 
           <TabsContent value="offers" className="mt-6 space-y-4">

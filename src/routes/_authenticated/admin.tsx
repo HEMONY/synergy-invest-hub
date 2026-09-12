@@ -32,6 +32,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +48,8 @@ import {
   activityActions,
   commissionNote,
   conditionLabels,
+  currencyOptions,
+  createProjectPayment,
   docTypeLabels,
   documentUrl,
   defaultSiteTagline,
@@ -72,6 +81,8 @@ import {
   fetchNewRequestSubtitle,
   fetchOpportunitiesTitle,
   fetchOpportunitiesSubtitle,
+  fetchPaymentCommissionRate,
+  fetchProjectPayments,
   fetchAllUserRoles,
   fetchConditionOptionTexts,
   formatSAR,
@@ -108,6 +119,7 @@ import {
   updateProfileVerification,
   updateRequest,
   type PropertyRequest,
+  type ProjectPayment,
   type ConditionOptionTexts,
 } from "@/lib/db";
 import { deleteUserAccount } from "@/lib/admin.functions";
@@ -567,7 +579,9 @@ function RequestFinancials({
   const mutate = useRequestMutation("تم حفظ بيانات المشروع");
   const [form, setForm] = useState({
     estimated_value: String(request.estimated_value ?? 0),
+    estimated_value_currency: request.estimated_value_currency || "جنيه",
     rehab_cost: String(request.rehab_cost ?? 0),
+    rehab_cost_currency: request.rehab_cost_currency || "جنيه",
     funding_needed: String(request.funding_needed ?? 0),
     expected_return: String(request.expected_return ?? 0),
     duration_months: String(request.duration_months ?? 0),
@@ -577,7 +591,9 @@ function RequestFinancials({
 
   const patch = {
     estimated_value: num(form.estimated_value),
+    estimated_value_currency: form.estimated_value_currency,
     rehab_cost: num(form.rehab_cost),
+    rehab_cost_currency: form.rehab_cost_currency,
     funding_needed: num(form.funding_needed),
     expected_return: num(form.expected_return),
     duration_months: Math.round(num(form.duration_months)),
@@ -592,10 +608,12 @@ function RequestFinancials({
     patch.duration_months <= 0 && patch.duration_days <= 0 && "مدة التنفيذ",
   ].filter(Boolean) as string[];
 
+  const currencyFields: [keyof typeof form, "estimated_value_currency" | "rehab_cost_currency", string][] = [
+    ["estimated_value", "estimated_value_currency", "القيمة التقديرية للعقار"],
+    ["rehab_cost", "rehab_cost_currency", "تكلفة المشروع"],
+  ];
+
   const fields: [keyof typeof form, string][] = [
-    ["estimated_value", "القيمة التقديرية للعقار"],
-    ["rehab_cost", "تكلفة المشروع"],
-    //["funding_needed", "التمويل المطلوب"],
     ["expected_return", "العائد المتوقع %"],
     ["duration_months", "المدة (أشهر)"],
     ["duration_days", "المدة (أيام)"],
@@ -611,6 +629,34 @@ function RequestFinancials({
           <p>وصف العقار: {privateDetails.property_details || "—"}</p>
         </div>
       )}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {currencyFields.map(([key, currencyKey, label]) => (
+          <div key={key}>
+            <Label className="text-xs">{label}</Label>
+            <div className="mt-2 flex gap-2">
+              <Input
+                className="flex-1"
+                inputMode="numeric"
+                value={form[key]}
+                onChange={(e) => set(key)(e.target.value)}
+              />
+              <Select value={form[currencyKey]} onValueChange={set(currencyKey)}>
+                <SelectTrigger className="w-28 shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencyOptions.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ))}
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
         {fields.map(([key, label]) => (
@@ -686,6 +732,103 @@ function RequestFinancials({
   );
 }
 
+function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [amount, setAmount] = useState("");
+
+  const { data: payments = [] } = useQuery({
+    queryKey: ["project-payments", request.id],
+    queryFn: () => fetchProjectPayments(request.id),
+  });
+  const { data: commissionRate = 1 } = useQuery({
+    queryKey: ["payment-commission-rate"],
+    queryFn: fetchPaymentCommissionRate,
+  });
+
+  const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+  const remaining = Math.max(Number(request.funding_needed) - totalPaid, 0);
+
+  const addPayment = useMutation({
+    mutationFn: () =>
+      createProjectPayment({
+        request_id: request.id,
+        amount: num(amount),
+        commission_rate: commissionRate,
+        created_by: user?.id ?? "",
+      }),
+    onSuccess: () => {
+      setAmount("");
+      queryClient.invalidateQueries({ queryKey: ["project-payments", request.id] });
+      toast.success("تم تسجيل الدفعة — خُصمت عمولة سينرجي تلقائياً");
+    },
+    onError: (e) => toast.error("تعذر تسجيل الدفعة", { description: (e as Error).message }),
+  });
+
+  return (
+    <div className="mt-4 space-y-3 rounded-xl border border-border p-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-xs font-bold text-muted-foreground">
+          مدفوعات المشروع (عمولة سينرجي {commissionRate}%)
+        </h4>
+        <span className="text-xs font-bold text-gold">المتبقي: {formatSAR(remaining)}</span>
+      </div>
+
+      {payments.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-right text-xs">
+            <thead className="text-muted-foreground">
+              <tr>
+                <th className="p-2">رقم الدفعة</th>
+                <th className="p-2">مبلغ الدفعة</th>
+                <th className="p-2">عمولة سينرجي</th>
+                <th className="p-2">مبلغ الشركة</th>
+                <th className="p-2">تاريخ الدفع</th>
+                <th className="p-2">المتبقي</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payments.map((p) => (
+                <tr key={p.id} className="border-t border-border">
+                  <td className="p-2 font-bold">#{p.payment_number}</td>
+                  <td className="p-2">{formatSAR(Number(p.amount))}</td>
+                  <td className="p-2 text-muted-foreground">{formatSAR(Number(p.commission_amount))}</td>
+                  <td className="p-2 font-semibold">{formatSAR(Number(p.company_amount))}</td>
+                  <td className="p-2 text-muted-foreground">
+                    {new Date(p.paid_at).toLocaleDateString("en-GB")}
+                  </td>
+                  <td className="p-2">{formatSAR(Number(p.remaining_amount))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="flex-1">
+          <Label className="text-xs">تسجيل دفعة جديدة</Label>
+          <Input
+            className="mt-2"
+            inputMode="numeric"
+            placeholder="مبلغ الدفعة"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </div>
+        <Button
+          size="sm"
+          variant="gold"
+          disabled={addPayment.isPending || num(amount) <= 0}
+          onClick={() => addPayment.mutate()}
+        >
+          {addPayment.isPending ? "جارٍ التسجيل..." : "تسجيل الدفعة"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function RequestsSection() {
   const { data: requests = [], isLoading } = useRequests();
   const { data: privates = [] } = useQuery({
@@ -719,6 +862,7 @@ function RequestsSection() {
             request={o}
             privateDetails={privates.find((p) => p.request_id === o.id)}
           />
+          <ProjectPaymentsPanel request={o} />
         </article>
       ))}
     </div>
@@ -1440,6 +1584,8 @@ function SettingsSection() {
           
         </div>
       </section>
+
+      <PaymentCommissionSettings />
 
       <section className="card-surface p-6">
         <h3 className="text-base font-bold">سياسات المنصة</h3>
