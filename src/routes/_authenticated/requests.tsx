@@ -21,6 +21,7 @@ import {
   costLabel,
   effectiveProgress,
   fetchMyRequests,
+  fetchMyProjectPayments,
   formatDuration,
   formatSAR,
   projectStages,
@@ -153,6 +154,64 @@ function EditRequestForm({
     </div>
   );
 }
+function MyPaymentsPanel({ ownerId }: { ownerId: string }) {
+  const { data: payments = [], isLoading } = useQuery({
+    queryKey: ["my-project-payments", ownerId],
+    queryFn: () => fetchMyProjectPayments(ownerId),
+    enabled: !!ownerId,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="card-surface p-10 text-center text-sm text-muted-foreground">
+        جارٍ التحميل...
+      </div>
+    );
+  }
+
+  if (payments.length === 0) {
+    return (
+      <div className="card-surface p-10 text-center text-sm text-muted-foreground">
+        لا توجد مدفوعات مسجَّلة على مشاريعك حتى الآن.
+      </div>
+    );
+  }
+
+  return (
+    <div className="card-surface overflow-x-auto p-6">
+      <table className="w-full text-right text-sm">
+        <thead className="text-xs text-muted-foreground">
+          <tr>
+            <th className="p-2">المشروع</th>
+            <th className="p-2">رقم الدفعة</th>
+            <th className="p-2">مبلغ الدفعة</th>
+            <th className="p-2">تاريخ الدفع</th>
+            <th className="p-2">المبلغ المتبقي</th>
+          </tr>
+        </thead>
+        <tbody>
+          {payments.map((p) => (
+            <tr key={p.id} className="border-t border-border">
+              <td className="p-2">
+                <p className="font-bold">{p.property_requests?.title || "—"}</p>
+                <p className="text-xs text-muted-foreground">{p.property_requests?.code}</p>
+              </td>
+              <td className="p-2 font-bold">#{p.payment_number}</td>
+              <td className="p-2">{formatSAR(Number(p.amount))}</td>
+              <td className="p-2 text-muted-foreground">
+                {new Date(p.paid_at).toLocaleDateString("en-GB")}
+              </td>
+              <td className="p-2 font-semibold text-gold">
+                {formatSAR(Number(p.remaining_amount))}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 
 function RequestsPage() {
   const { user } = useAuth();
@@ -203,7 +262,8 @@ function RequestsPage() {
         <Tabs defaultValue="requests">
           <TabsList>
             
-            <TabsTrigger value="commissions">مدفوعاتي</TabsTrigger>
+            <TabsTrigger value="my-payments">مدفوعاتي</TabsTrigger>
+
             <TabsTrigger value="projects">مشاريعي</TabsTrigger>
             <TabsTrigger value="offers">العروض</TabsTrigger>
             <TabsTrigger value="requests">طلباتي</TabsTrigger>
@@ -223,6 +283,9 @@ function RequestsPage() {
                 <CompanyOffersPanel userId={user.id} />
               </>
             )}
+          </TabsContent>
+            <TabsContent value="my-payments" className="mt-6 space-y-4">
+            {user && <MyPaymentsPanel ownerId={user.id} />}
           </TabsContent>
 
           <TabsContent value="commissions" className="mt-6 space-y-4">

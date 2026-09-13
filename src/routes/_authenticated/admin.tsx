@@ -47,6 +47,8 @@ import { useStaff } from "@/hooks/useStaff";
 import {
   activityActions,
   commissionNote,
+  paymentCommissionNote,
+  
   conditionLabels,
   currencyOptions,
   createProjectPayment,
@@ -112,6 +114,7 @@ import {
   saveNewRequestSubtitle,
   saveOpportunitiesTitle,
   saveOpportunitiesSubtitle,
+  savePaymentCommissionRate,
   saveConditionOptionTexts,
   statusLabels,
   timeAgo,
@@ -1524,7 +1527,54 @@ function SiteTaglineSettings() {
     </section>
   );
 }
+function PaymentCommissionSettings() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: rate = 1 } = useQuery({
+    queryKey: ["payment-commission-rate"],
+    queryFn: fetchPaymentCommissionRate,
+  });
+  const [draft, setDraft] = useState("1");
+  const [saving, setSaving] = useState(false);
 
+  useEffect(() => setDraft(String(rate)), [rate]);
+
+  if (!user) return null;
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await savePaymentCommissionRate(draft.trim(), user.id);
+      toast.success("تم حفظ نسبة العمولة");
+      queryClient.invalidateQueries({ queryKey: ["payment-commission-rate"] });
+    } catch (err) {
+      toast.error("تعذر الحفظ", { description: (err as Error).message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="card-surface p-6">
+      <h3 className="text-base font-bold">عمولة سينرجي على دفعات المشروع</h3>
+      <p className="mt-1 text-xs text-muted-foreground">{paymentCommissionNote}</p>
+      <div className="mt-4 flex flex-wrap items-end gap-3">
+        <div>
+          <Label className="text-xs">نسبة العمولة على كل دفعة (%)</Label>
+          <Input
+            className="mt-2 w-40"
+            inputMode="numeric"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+        </div>
+        <Button size="sm" variant="outlineGold" disabled={saving} onClick={save}>
+          {saving ? "جارٍ الحفظ..." : "حفظ النسبة"}
+        </Button>
+      </div>
+    </section>
+  );
+}
 const settingsKey = "synergy-admin-settings";
 
 function SettingsSection() {
