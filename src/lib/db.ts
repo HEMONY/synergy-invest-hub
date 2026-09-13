@@ -124,7 +124,7 @@ export const commissionNote =
 export const paymentCommissionNote =
   "تُخصم عمولة المنصة تلقائياً من دفعات المشروع قبل تحويل المبلغ إلى الشركة.";
 
-export const formatSAR = (n: number) => `${Number(n || 0).toLocaleString("en-US")} ج.س`;
+export const formatSAR = "";//(n: number) => `${Number(n || 0).toLocaleString("en-US")} ج.س`;
 
 export function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();

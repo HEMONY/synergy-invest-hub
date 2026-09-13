@@ -1611,7 +1611,6 @@ function SettingsSection() {
       <SiteTaglineSettings />
       <section className="card-surface p-6">
         <h3 className="text-base font-bold">إعدادات العمولة والسداد</h3>
-        <p className="mt-1 text-xs text-muted-foreground">{commissionNote}</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div>
             <Label className="text-xs">نسبة عمولة المنصة (%)</Label>

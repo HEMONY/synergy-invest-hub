@@ -476,12 +476,7 @@ function OpportunitiesPage() {
             </div>
             <div>
               <Label className="text-xs">ملاحظات الشركة (اختياري)</Label>
-              <Textarea
-                className="mt-2 min-h-16"
-                value={offer.company_notes}
-                onChange={(e) => setOfferField("company_notes")(e.target.value)}
-                placeholder="أي أعمال إضافية يتم الاتفاق عليها مسبقاً"
-              />
+             
             </div>
             <p className="text-[11px] leading-5 text-muted-foreground">{commissionNote}</p>
 

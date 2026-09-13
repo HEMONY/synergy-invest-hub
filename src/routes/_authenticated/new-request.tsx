@@ -360,12 +360,12 @@ function NewRequestPage() {
                 />
               </div>
               <div className="sm:col-span-2">
-                <Label className="text-xs">وصف تفصيلي للموقع والعقار</Label>
+                <Label className="text-xs">وصف تفصيلي للعقار</Label>
                 <Textarea
                   className="mt-2 min-h-24"
                   value={form.property_details}
                   onChange={(e) => set("property_details")(e.target.value)}
-                  placeholder="منزل من طابق واحد، مدخل من الشارع الرئيسي، أقرب علامة مميزة..."
+                  placeholder="منزل من طابق واحد، مكون من اربع غرف ..."
                 />
               </div>
             </div>

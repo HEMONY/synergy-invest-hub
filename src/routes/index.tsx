@@ -31,7 +31,7 @@ export const Route = createFileRoute("/")({
 const features = [
   { icon: ShieldCheck, title: "موثوق وآمن", body: "جميع التعاملات موثقة وشفافة" },
   { icon: Users, title: "شبكة واسعة", body: "شبكة واسعة من شركات القطاع العقاري" },
-  { icon: BarChart3, title: "أقساط مريحة", body: "خطط سداد ميسّرة تناسبك" },
+  //{ icon: BarChart3, title: "أقساط مريحة", body: "خطط سداد ميسّرة تناسبك" },
   { icon: Building2, title: "إدارة متكاملة", body: "متابعة جميع مراحل المشروع" },
 ];
 
