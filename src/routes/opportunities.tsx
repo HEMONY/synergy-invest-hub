@@ -478,7 +478,6 @@ function OpportunitiesPage() {
               <Label className="text-xs">ملاحظات الشركة (اختياري)</Label>
              
             </div>
-            <p className="text-[11px] leading-5 text-muted-foreground">{commissionNote}</p>
 
             <DialogFooter className="gap-2">
               <Button type="button" variant="outline" onClick={() => setOfferFor(null)}>
