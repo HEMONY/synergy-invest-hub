@@ -774,7 +774,9 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
         <h4 className="text-xs font-bold text-muted-foreground">
           مدفوعات المشروع (عمولة سينرجي {commissionRate}%)
         </h4>
-        <span className="text-xs font-bold text-gold">المتبقي: {formatSAR(remaining)}</span>
+        {Number(request.funding_needed) > 0 && (
+          <span className="text-xs font-bold text-gold">المتبقي: {formatSAR(remaining)}</span>
+        )}
       </div>
 
       {payments.length > 0 && (
