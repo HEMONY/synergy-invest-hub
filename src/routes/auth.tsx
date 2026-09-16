@@ -64,7 +64,6 @@ function AuthPage() {
   const [signup, setSignup] = useState({ fullName: "", email: "", password: "" });
   const [login, setLogin] = useState({ email: "", password: "" });
   const [otpEmail, setOtpEmail] = useState("");
-  const [otp, setOtp] = useState("");
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
 
@@ -113,28 +112,7 @@ function AuthPage() {
     });
   };
 
-  const handleVerifyOtp = async () => {
-    const code = otp.replace(/\D/g, "");
-    if (code.length < 6) {
-      toast.error("أدخل رمز التأكيد المكوّن من 6 أرقام");
-      return;
-    }
-    setLoading(true);
-    const { error } = await supabase.auth.verifyOtp({
-      email: otpEmail,
-      token: code,
-      type: "signup",
-    });
-    setLoading(false);
-    if (error) {
-      toast.error("رمز التأكيد غير صحيح أو منتهي الصلاحية", {
-        description: "تأكد من الرمز المرسل إلى بريدك أو اطلب رمزاً جديداً.",
-      });
-      return;
-    }
-    toast.success("تم تأكيد حسابك بنجاح", { description: "مرحباً بك في منصة سينرجي." });
-    navigate({ to: "/requests" });
-  };
+ 
 
   const handleResendOtp = async () => {
     setLoading(true);
@@ -181,7 +159,7 @@ function AuthPage() {
       if (/Email not confirmed/i.test(error.message)) {
         setOtpEmail(parsed.data.email);
         toast.error("لم يتم تأكيد حسابك بعد", {
-          description: "أدخل رمز التأكيد المرسل إلى بريدك لإكمال التسجيل.",
+          description: "افتح بريدك الإلكتروني واضغط على رابط التأكيد لإكمال التسجيل.",
         });
         return;
       }
@@ -235,32 +213,20 @@ function AuthPage() {
             <div className="mb-6 rounded-2xl border border-gold/40 bg-gold/5 p-5">
               <h2 className="text-sm font-extrabold">تأكيد الحساب</h2>
               <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                تم تسجيل حسابك. الرجاء إدخال رمز التأكيد المرسل إلى{" "}
+                تم تسجيل حسابك. الرجاء الذهاب إلى بريدك الإلكتروني{" "}
                 <span dir="ltr" className="font-semibold text-gold">
                   {otpEmail}
-                </span>
-                .
+                </span>{" "}
+                والضغط على رابط التأكيد لإكمال التسجيل.
               </p>
-              <Input
-                className="mt-3 text-center text-lg tracking-[0.5em]"
-                dir="ltr"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="000000"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              />
               <div className="mt-3 flex flex-wrap gap-2">
-                <Button variant="gold" size="sm" disabled={loading} onClick={handleVerifyOtp}>
-                  تأكيد الحساب
-                </Button>
                 <Button
                   variant="outlineGold"
                   size="sm"
                   disabled={loading}
                   onClick={handleResendOtp}
                 >
-                  إعادة إرسال الرمز
+                  إعادة إرسال رابط التأكيد
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setOtpEmail("")}>
                   إلغاء
