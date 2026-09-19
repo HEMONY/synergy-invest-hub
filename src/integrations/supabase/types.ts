@@ -241,7 +241,7 @@ export type Database = {
         }
         Relationships: []
       }
-      property_requests: {
+            property_requests: {
         Row: {
           area_sqm: number
           city: string
@@ -253,6 +253,7 @@ export type Database = {
           duration_days: number
           duration_months: number
           estimated_value: number
+          estimated_value_currency: string
           expected_return: number
           funding_needed: number
           id: string
@@ -260,7 +261,9 @@ export type Database = {
           owner_id: string
           progress: number
           property_type: string
+          published_at: string | null
           rehab_cost: number
+          rehab_cost_currency: string
           return_notes: string
           stage_index: number
           status: string
@@ -278,6 +281,7 @@ export type Database = {
           duration_days?: number
           duration_months?: number
           estimated_value?: number
+          estimated_value_currency?: string
           expected_return?: number
           funding_needed?: number
           id?: string
@@ -285,7 +289,9 @@ export type Database = {
           owner_id: string
           progress?: number
           property_type: string
+          published_at?: string | null
           rehab_cost?: number
+          rehab_cost_currency?: string
           return_notes?: string
           stage_index?: number
           status?: string
@@ -303,6 +309,7 @@ export type Database = {
           duration_days?: number
           duration_months?: number
           estimated_value?: number
+          estimated_value_currency?: string
           expected_return?: number
           funding_needed?: number
           id?: string
@@ -310,7 +317,9 @@ export type Database = {
           owner_id?: string
           progress?: number
           property_type?: string
+          published_at?: string | null
           rehab_cost?: number
+          rehab_cost_currency?: string
           return_notes?: string
           stage_index?: number
           status?: string
@@ -318,6 +327,122 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      project_payments: {
+        Row: {
+          amount: number
+          commission_amount: number
+          commission_rate: number
+          company_amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          paid_at: string
+          payment_method: string
+          payment_number: number
+          payout_status: string
+          refunded_amount: number
+          remaining_amount: number
+          request_id: string
+        }
+        Insert: {
+          amount?: number
+          commission_amount?: number
+          commission_rate?: number
+          company_amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          paid_at?: string
+          payment_method?: string
+          payment_number?: number
+          payout_status?: string
+          refunded_amount?: number
+          remaining_amount?: number
+          request_id: string
+        }
+        Update: {
+          amount?: number
+          commission_amount?: number
+          commission_rate?: number
+          company_amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          paid_at?: string
+          payment_method?: string
+          payment_number?: number
+          payout_status?: string
+          refunded_amount?: number
+          remaining_amount?: number
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_payments_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "property_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_refund_requests: {
+        Row: {
+          admin_note: string
+          amount: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          payment_id: string
+          reason: string
+          request_id: string
+          requested_by: string
+          status: string
+        }
+        Insert: {
+          admin_note?: string
+          amount?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          payment_id: string
+          reason?: string
+          request_id: string
+          requested_by: string
+          status?: string
+        }
+        Update: {
+          admin_note?: string
+          amount?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          payment_id?: string
+          reason?: string
+          request_id?: string
+          requested_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_refund_requests_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "project_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_refund_requests_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "property_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       request_private_details: {
         Row: {
@@ -377,7 +502,13 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      request_offer_counts: {
+        Row: {
+          request_id: string
+          offer_count: number
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {

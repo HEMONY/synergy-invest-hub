@@ -52,6 +52,10 @@ import {
   conditionLabels,
   currencyOptions,
   createProjectPayment,
+  decideRefundRequest,
+  fetchRefundRequestsForRequest,
+  markPaymentReleased,
+  refundStatusLabels,
   docTypeLabels,
   documentUrl,
   defaultSiteTagline,
@@ -748,7 +752,29 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
     queryKey: ["payment-commission-rate"],
     queryFn: fetchPaymentCommissionRate,
   });
+    const { data: refunds = [] } = useQuery({
+    queryKey: ["refund-requests", request.id],
+    queryFn: () => fetchRefundRequestsForRequest(request.id),
+  });
 
+  const release = useMutation({
+    mutationFn: (paymentId: string) => markPaymentReleased(paymentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-payments", request.id] });
+      toast.success("تم صرف الدفعة للشركة العقارية");
+    },
+    onError: (e) => toast.error("تعذر الصرف", { description: (e as Error).message }),
+  });
+
+  const decideRefund = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "approved" | "rejected" }) =>
+      decideRefundRequest(id, status, user?.id ?? ""),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["refund-requests", request.id] });
+      toast.success("تم تحديث طلب الاسترداد");
+    },
+    onError: (e) => toast.error("تعذر التحديث", { description: (e as Error).message }),
+  });
   const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const remaining = Math.max(Number(request.funding_needed) - totalPaid, 0);
 
@@ -790,6 +816,7 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
                 <th className="p-2">مبلغ الشركة</th>
                 <th className="p-2">تاريخ الدفع</th>
                 <th className="p-2">المتبقي</th>
+                <th className="p-2">صرف الشركة</th>
               </tr>
             </thead>
             <tbody>
@@ -803,11 +830,62 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
                     {new Date(p.paid_at).toLocaleDateString("en-GB")}
                   </td>
                   <td className="p-2">{formatSAR(Number(p.remaining_amount))}</td>
+                  <td className="p-2">
+                    {p.payout_status === "released" ? (
+                      <span className="text-xs font-semibold text-green-600">تم الصرف</span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={release.isPending}
+                        onClick={() => release.mutate(p.id)}
+                      >
+                        صرف للشركة
+                      </Button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        {refunds.length > 0 && (
+          <div className="space-y-2 rounded-lg bg-muted/60 p-3">
+            <p className="text-xs font-bold text-muted-foreground">طلبات الاسترداد</p>
+            {refunds.map((r) => (
+              <div
+                key={r.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background p-3 text-xs"
+              >
+                <div>
+                  <p className="font-bold">{formatSAR(Number(r.amount))}</p>
+                  <p className="mt-1 text-muted-foreground">{r.reason}</p>
+                  <p className="mt-1 text-muted-foreground">{refundStatusLabels[r.status] ?? r.status}</p>
+                </div>
+                {r.status === "pending" && (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="gold"
+                      disabled={decideRefund.isPending}
+                      onClick={() => decideRefund.mutate({ id: r.id, status: "approved" })}
+                    >
+                      موافقة
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={decideRefund.isPending}
+                      onClick={() => decideRefund.mutate({ id: r.id, status: "rejected" })}
+                    >
+                      رفض
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       )}
 
       <div className="flex flex-wrap items-end gap-2">
@@ -978,9 +1056,6 @@ function MatchingSection() {
               <h3 className="truncate text-sm font-bold">
                 {r?.title || `${r?.property_type} — ${r?.city}`} · {r?.code}
               </h3>
-              <span className="shrink-0 text-sm font-bold text-gold">
-                {formatSAR(Number(i.amount))}
-              </span>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
               {interestStatusLabels[i.status] ?? i.status} · {timeAgo(i.created_at)}
@@ -1859,8 +1934,8 @@ function PaymentsSection() {
                   <td className="py-3">
                     <FundingCell id={r.id} value={Number(r.funding_needed)} />
                   </td>
-                  <td className="py-3">{formatSAR(commission)}</td>
-                  <td className="py-3">{formatSAR(commission / months)}</td>
+                  <td className="py-3">{commission > 0 ? formatSAR(commission) : "—"}</td>
+                  <td className="py-3">{commission > 0 ? formatSAR(commission / months) : "—"}</td>
                 </tr>
               );
             })}

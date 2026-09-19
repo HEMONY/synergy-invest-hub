@@ -381,6 +381,7 @@ export async function createProjectPayment(input: {
   request_id: string;
   amount: number;
   commission_rate: number;
+  payment_method?: string;
   paid_at?: string;
   created_by: string;
 }) {
@@ -391,6 +392,98 @@ export async function createProjectPayment(input: {
     .single();
   if (error) throw error;
   return data;
+}
+
+/** طرق الدفع المتاحة لدفعة المشروع. */
+export const paymentMethods = ["دفع إلكتروني", "تحويل بنكي", "محفظة إلكترونية"] as const;
+
+/** العميل يدفع دفعة على مشروعه مباشرة — تُخصم العمولة تلقائياً وتُؤكَّد الدفعة فوراً. */
+export async function payProjectInstallment(input: {
+  request_id: string;
+  amount: number;
+  payment_method: string;
+  owner_id: string;
+}) {
+  const commission_rate = await fetchPaymentCommissionRate();
+  return createProjectPayment({
+    request_id: input.request_id,
+    amount: input.amount,
+    commission_rate,
+    payment_method: input.payment_method,
+    created_by: input.owner_id,
+  });
+}
+
+/** صرف دفعة للشركة العقارية بعد التحقق من مرحلة الإنجاز (للإدارة). */
+export async function markPaymentReleased(id: string) {
+  const { error } = await supabase
+    .from("project_payments")
+    .update({ payout_status: "released" })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/* ---------- طلبات استرداد المبلغ ---------- */
+
+export type PaymentRefundRequest = Tables<"payment_refund_requests">;
+
+export const refundStatusLabels: Record<string, string> = {
+  pending: "قيد المراجعة",
+  approved: "تمت الموافقة",
+  rejected: "مرفوض",
+};
+
+/** العميل يطلب استرداد مبلغ دفعة مع تحديد السبب. */
+export async function createRefundRequest(input: {
+  payment_id: string;
+  request_id: string;
+  amount: number;
+  reason: string;
+  requested_by: string;
+}) {
+  const { error } = await supabase.from("payment_refund_requests").insert(input);
+  if (error) throw error;
+}
+
+/** طلبات الاسترداد الخاصة بصاحب المشروع. */
+export async function fetchMyRefundRequests(ownerId: string) {
+  const { data, error } = await supabase
+    .from("payment_refund_requests")
+    .select("*, property_requests!inner(title, code, owner_id)")
+    .eq("property_requests.owner_id", ownerId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** طلبات الاسترداد على مشروع معيّن (للإدارة). */
+export async function fetchRefundRequestsForRequest(requestId: string) {
+  const { data, error } = await supabase
+    .from("payment_refund_requests")
+    .select("*")
+    .eq("request_id", requestId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** موافقة الإدارة أو رفضها لطلب استرداد. */
+export async function decideRefundRequest(
+  id: string,
+  status: "approved" | "rejected",
+  deciderId: string,
+  adminNote = "",
+) {
+  const { error } = await supabase
+    .from("payment_refund_requests")
+    .update({
+      status,
+      admin_note: adminNote,
+      decided_by: deciderId,
+      decided_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw error;
 }
 
 /* ---------- Profile ---------- */

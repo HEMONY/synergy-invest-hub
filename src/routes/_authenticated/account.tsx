@@ -189,7 +189,6 @@ function AccountPage() {
                   <tr>
                     <th className="p-3">المشروع</th>
                     <th className="p-3">التاريخ</th>
-                    <th className="p-3">المبلغ</th>
                     <th className="p-3">الحالة</th>
                   </tr>
                 </thead>
@@ -202,7 +201,6 @@ function AccountPage() {
                       <td className="p-3 text-muted-foreground">
                         {new Date(i.created_at).toLocaleDateString("en-GB")}
                       </td>
-                      <td className="p-3 font-bold text-gold">{formatSAR(Number(i.amount))}</td>
                       <td className="p-3">
                         <Badge className={statusStyle[i.status] ?? "bg-muted"}>
                           {docStatusLabels[i.status] ?? "قيد المراجعة"}

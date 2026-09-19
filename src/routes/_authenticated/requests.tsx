@@ -19,18 +19,21 @@ import {
   commissionNote,
   conditionLabels,
   costLabel,
+  createRefundRequest,
   effectiveProgress,
   fetchMyRequests,
   fetchMyProjectPayments,
+  fetchProjectPayments,
   formatDuration,
   formatSAR,
+  payProjectInstallment,
+  paymentMethods,
   projectStages,
   statusLabels,
   timeAgo,
   updateMyRequest,
   type PropertyRequest,
 } from "@/lib/db";
-
 export const Route = createFileRoute("/_authenticated/requests")({
   head: () => ({
     meta: [
@@ -212,6 +215,186 @@ function MyPaymentsPanel({ ownerId }: { ownerId: string }) {
   );
 }
 
+function ProjectPaymentActions({
+  project,
+  ownerId,
+}: {
+  project: PropertyRequest;
+  ownerId: string;
+}) {
+  const queryClient = useQueryClient();
+  const [mode, setMode] = useState<"idle" | "pay" | "refund">("idle");
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState<string>(paymentMethods[0]);
+  const [refundPaymentId, setRefundPaymentId] = useState("");
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const { data: payments = [] } = useQuery({
+    queryKey: ["project-payments", project.id],
+    queryFn: () => fetchProjectPayments(project.id),
+  });
+
+  const resetAndClose = () => {
+    setAmount("");
+    setReason("");
+    setRefundPaymentId("");
+    setMode("idle");
+  };
+
+  const pay = async () => {
+    const value = Number(amount) || 0;
+    if (value <= 0) {
+      toast.error("أدخل مبلغ الدفعة");
+      return;
+    }
+    setLoading(true);
+    try {
+      await payProjectInstallment({
+        request_id: project.id,
+        amount: value,
+        payment_method: method,
+        owner_id: ownerId,
+      });
+      toast.success("تم الدفع وتأكيده تلقائياً", {
+        description: "سيتم صرف المبلغ للشركة العقارية حسب مراحل الإنجاز.",
+      });
+      resetAndClose();
+      queryClient.invalidateQueries({ queryKey: ["project-payments", project.id] });
+      queryClient.invalidateQueries({ queryKey: ["my-project-payments", ownerId] });
+    } catch (err) {
+      toast.error("تعذر الدفع", { description: (err as Error).message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendRefund = async () => {
+    const payment = payments.find((p) => p.id === refundPaymentId);
+    if (!payment) {
+      toast.error("اختر الدفعة المطلوب استردادها");
+      return;
+    }
+    if (!reason.trim()) {
+      toast.error("اذكر سبب طلب الاسترداد");
+      return;
+    }
+    setLoading(true);
+    try {
+      await createRefundRequest({
+        payment_id: payment.id,
+        request_id: project.id,
+        amount: Number(payment.amount),
+        reason: reason.trim(),
+        requested_by: ownerId,
+      });
+      toast.success("تم إرسال طلب الاسترداد", { description: "بانتظار موافقة الإدارة." });
+      resetAndClose();
+    } catch (err) {
+      toast.error("تعذر إرسال الطلب", { description: (err as Error).message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (mode === "pay") {
+    return (
+      <div className="mt-5 rounded-xl border border-gold/30 p-4">
+        <p className="text-xs font-bold text-gold">الدفع الإلكتروني</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label className="text-xs">مبلغ الدفعة</Label>
+            <Input
+              className="mt-2"
+              inputMode="numeric"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">طريقة الدفع</Label>
+            <select
+              className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+            >
+              {paymentMethods.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" variant="gold" disabled={loading} onClick={pay}>
+            {loading ? "جارٍ الدفع..." : "تأكيد الدفع"}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={resetAndClose}>
+            إلغاء
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === "refund") {
+    return (
+      <div className="mt-5 rounded-xl border border-border p-4">
+        <p className="text-xs font-bold">طلب استرداد المبلغ</p>
+        {payments.length === 0 ? (
+          <p className="mt-2 text-xs text-muted-foreground">لا توجد دفعات مسجَّلة لاستردادها.</p>
+        ) : (
+          <>
+            <div className="mt-3">
+              <Label className="text-xs">الدفعة</Label>
+              <select
+                className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={refundPaymentId}
+                onChange={(e) => setRefundPaymentId(e.target.value)}
+              >
+                <option value="">اختر الدفعة...</option>
+                {payments.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    الدفعة #{p.payment_number} — {formatSAR(Number(p.amount))}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="mt-3">
+              <Label className="text-xs">سبب الاسترداد</Label>
+              <Textarea
+                className="mt-2"
+                rows={3}
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Button size="sm" variant="gold" disabled={loading} onClick={sendRefund}>
+                {loading ? "جارٍ الإرسال..." : "إرسال الطلب"}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={resetAndClose}>
+                إلغاء
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5 flex flex-wrap gap-2">
+      <Button size="sm" variant="gold" onClick={() => setMode("pay")}>
+        الدفع
+      </Button>
+      <Button size="sm" variant="outline" onClick={() => setMode("refund")}>
+        طلب استرداد المبلغ
+      </Button>
+    </div>
+  );
+}
 
 function RequestsPage() {
   const { user } = useAuth();
@@ -383,7 +566,7 @@ function RequestsPage() {
                     </p>
                   </div>
                   <span className="shrink-0 text-sm font-bold text-gold">
-                    {formatSAR(Number(p.funding_needed))}
+                    {Number(p.funding_needed) > 0 ? formatSAR(Number(p.funding_needed)) : ""}
                   </span>
                 </div>
 
@@ -407,6 +590,10 @@ function RequestsPage() {
                   <p className="mb-2 text-xs font-semibold text-muted-foreground">حالة المشروع</p>
                   <Stepper current={p.stage_index} />
                 </div>
+
+                {["matched", "in_progress"].includes(p.status) && (
+                  <ProjectPaymentActions project={p} ownerId={userId} />
+                )}
               </article>
             ))}
           </TabsContent>
