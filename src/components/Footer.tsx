@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { Logo } from "@/components/Logo";
 import { defaultFooterText, fetchFooterText } from "@/lib/db";
-import {
+import {//
   FacebookIcon,
   InstagramIcon,
   SnapchatIcon,
