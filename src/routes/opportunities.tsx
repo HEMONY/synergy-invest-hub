@@ -455,24 +455,7 @@ function OpportunitiesPage() {
               />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <Label className="text-xs">طريقة الدفع</Label>
-                <Input
-                  className="mt-2"
-                  value={offer.payment_method}
-                  onChange={(e) => setOfferField("payment_method")(e.target.value)}
-                  placeholder="دفعات حسب مراحل الإنجاز"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">الضمان</Label>
-                <Input
-                  className="mt-2"
-                  value={offer.warranty}
-                  onChange={(e) => setOfferField("warranty")(e.target.value)}
-                  placeholder="ضمان سنة"
-                />
-              </div>
+              
             </div>
             <div>
               <Label className="text-xs">ملاحظات الشركة (اختياري)</Label>
@@ -483,8 +466,7 @@ function OpportunitiesPage() {
                 placeholder="أي أعمال إضافية يتم الاتفاق عليها مسبقاً"
               />
             </div>
-            <p className="text-[11px] leading-5 text-muted-foreground">{commissionNote}</p>
-
+ 
             <DialogFooter className="gap-2">
               <Button type="button" variant="outline" onClick={() => setOfferFor(null)}>
                 إلغاء
