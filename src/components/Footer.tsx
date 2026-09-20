@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
 import { Logo } from "@/components/Logo";
-import { defaultFooterText, fetchFooterText } from "@/lib/db";
+import { defaultFooterText, fetchFooterText } from "@/lib/db";//
 import {//
   FacebookIcon,
   InstagramIcon,
