@@ -849,43 +849,44 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
             </tbody>
           </table>
         </div>
-        {refunds.length > 0 && (
-          <div className="space-y-2 rounded-lg bg-muted/60 p-3">
-            <p className="text-xs font-bold text-muted-foreground">طلبات الاسترداد</p>
-            {refunds.map((r) => (
-              <div
-                key={r.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background p-3 text-xs"
-              >
-                <div>
-                  <p className="font-bold">{formatSAR(Number(r.amount))}</p>
-                  <p className="mt-1 text-muted-foreground">{r.reason}</p>
-                  <p className="mt-1 text-muted-foreground">{refundStatusLabels[r.status] ?? r.status}</p>
-                </div>
-                {r.status === "pending" && (
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="gold"
-                      disabled={decideRefund.isPending}
-                      onClick={() => decideRefund.mutate({ id: r.id, status: "approved" })}
-                    >
-                      موافقة
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={decideRefund.isPending}
-                      onClick={() => decideRefund.mutate({ id: r.id, status: "rejected" })}
-                    >
-                      رفض
-                    </Button>
-                  </div>
-                )}
+      )}
+
+      {refunds.length > 0 && (
+        <div className="space-y-2 rounded-lg bg-muted/60 p-3">
+          <p className="text-xs font-bold text-muted-foreground">طلبات الاسترداد</p>
+          {refunds.map((r) => (
+            <div
+              key={r.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background p-3 text-xs"
+            >
+              <div>
+                <p className="font-bold">{formatSAR(Number(r.amount))}</p>
+                <p className="mt-1 text-muted-foreground">{r.reason}</p>
+                <p className="mt-1 text-muted-foreground">{refundStatusLabels[r.status] ?? r.status}</p>
               </div>
-            ))}
-          </div>
-        )}
+              {r.status === "pending" && (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="gold"
+                    disabled={decideRefund.isPending}
+                    onClick={() => decideRefund.mutate({ id: r.id, status: "approved" })}
+                  >
+                    موافقة
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={decideRefund.isPending}
+                    onClick={() => decideRefund.mutate({ id: r.id, status: "rejected" })}
+                  >
+                    رفض
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       )}
 
       <div className="flex flex-wrap items-end gap-2">
@@ -1246,7 +1247,7 @@ function ProjectsSection() {
               +10% إنجاز
             </Button>
             <Button
-              size="sm"
+              size="sm"   
               variant="outline"
               onClick={() =>
                 mutate.mutate({
