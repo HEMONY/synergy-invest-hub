@@ -132,7 +132,6 @@ export function OwnerOffersPanel({ ownerId }: { ownerId: string }) {
               <h3 className="truncate text-base font-bold">
                 {o.request?.title || `${o.request?.city} — ${o.request?.district}`} · {code}
               </h3>
-              <Badge className="shrink-0 bg-gold/15 text-gold">{formatSAR(Number(o.amount))}</Badge>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
               {interestStatusLabels[o.status] ?? o.status} · {timeAgo(o.created_at)}
