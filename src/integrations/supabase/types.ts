@@ -99,10 +99,13 @@ export type Database = {
           company_notes: string
           company_phone: string
           created_at: string
+          duration_days: number
+          duration_months: number
           id: string
           investor_id: string
           message: string
           payment_method: string
+          payment_schedule: Json
           proposed_works: string
           request_id: string
           scope_of_work: string
@@ -119,10 +122,13 @@ export type Database = {
           company_notes?: string
           company_phone?: string
           created_at?: string
+          duration_days?: number
+          duration_months?: number
           id?: string
           investor_id: string
           message?: string
           payment_method?: string
+          payment_schedule?: Json
           proposed_works?: string
           request_id: string
           scope_of_work?: string
@@ -139,10 +145,13 @@ export type Database = {
           company_notes?: string
           company_phone?: string
           created_at?: string
+          duration_days?: number
+          duration_months?: number
           id?: string
           investor_id?: string
           message?: string
           payment_method?: string
+          payment_schedule?: Json
           proposed_works?: string
           request_id?: string
           scope_of_work?: string

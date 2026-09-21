@@ -106,9 +106,8 @@ function AuthPage() {
     }
 
     setOtpEmail(parsed.data.email);
-    setOtp("");
     toast.success("تم تسجيل حسابك", {
-      description: "الرجاء إدخال رمز التأكيد المكوّن من 6 أرقام الذي تم إرساله إلى بريدك.",
+      description: "الرجاء الذهاب إلى بريدك الإلكتروني والضغط على رابط التأكيد لإكمال التسجيل.",
     });
   };
 

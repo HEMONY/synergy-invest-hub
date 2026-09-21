@@ -33,6 +33,8 @@ import {
   commissionNote,
   costLabel,
   submitCompanyOffer,
+  offerPaymentTypes,
+  type PaymentScheduleItem,
   defaultOpportunitiesTitle,
   defaultOpportunitiesSubtitle,
   fetchOfferCounts,
@@ -119,45 +121,67 @@ function OpportunitiesPage() {
       (o.district + o.city + o.damage_description + o.title).includes(applied.query.trim()),
   );
 
-  const [offerFor, setOfferFor] = useState<{ id: string; code: string; amount: number } | null>(
+  const [offerFor, setOfferFor] = useState<{ id: string; code: string; suggested: number } | null>(
     null,
   );
   const [offer, setOffer] = useState({
+    amount: "",
+    duration_months: "",
+    duration_days: "",
     company_name: "",
     company_phone: "",
     company_location: "",
     scope_of_work: "",
     proposed_works: "",
-    payment_method: "",
-    warranty: "",
+    payment_method: offerPaymentTypes[0] as string,
+    warranty_duration: "",
+    warranty_coverage: "",
     company_notes: "",
   });
+  const [schedule, setSchedule] = useState<PaymentScheduleItem[]>([{ percentage: 0, stage: "" }]);
   const setOfferField = (k: keyof typeof offer) => (v: string) =>
     setOffer((o) => ({ ...o, [k]: v }));
+  const setScheduleField = (i: number, k: keyof PaymentScheduleItem) => (v: string) =>
+    setSchedule((rows) =>
+      rows.map((row, idx) => (idx === i ? { ...row, [k]: k === "percentage" ? Number(v) || 0 : v } : row)),
+    );
+  const addScheduleRow = () => setSchedule((rows) => [...rows, { percentage: 0, stage: "" }]);
+  const removeScheduleRow = (i: number) =>
+    setSchedule((rows) => rows.filter((_, idx) => idx !== i));
 
-  const openOffer = (id: string, amount: number, code: string) => {
+  const openOffer = (id: string, suggested: number, code: string) => {
     if (!user) {
       toast.info("سجّل الدخول أولاً", { description: "هذه الخدمة للشركات العقارية الموثقة." });
       return;
     }
-    setOfferFor({ id, code, amount });
+    setOfferFor({ id, code, suggested });
   };
 
   const submitOffer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !offerFor) return;
+    const isInstallments = offer.payment_method === "على دفعات";
+    const scheduleTotal = schedule.reduce((s, r) => s + Number(r.percentage || 0), 0);
     const required: [string, string][] = [
+      ["قيمة العرض", offer.amount],
+      ["مدة التنفيذ", offer.duration_months || offer.duration_days],
       ["اسم الشركة", offer.company_name],
       ["رقم هاتف الشركة", offer.company_phone],
       ["موقع الشركة", offer.company_location],
       ["نطاق العمل", offer.scope_of_work],
       ["الأعمال المقترحة", offer.proposed_works],
-      ["طريقة الدفع", offer.payment_method],
-      ["الضمان", offer.warranty],
+      ["مدة الضمان", offer.warranty_duration],
+      ["ما يشمله الضمان", offer.warranty_coverage],
     ];
     const missing = required.filter(([, v]) => !v.trim()).map(([k]) => k);
     if (missing.length > 0) {
       toast.error("أكمل بيانات العرض", { description: `مطلوب: ${missing.join("، ")}` });
+      return;
+    }
+    if (isInstallments && (schedule.some((r) => !r.stage.trim() || r.percentage <= 0) || scheduleTotal !== 100)) {
+      toast.error("راجع جدول الدفعات", {
+        description: "تأكد من تحديد مرحلة ونسبة لكل دفعة، وأن مجموع النسب 100%.",
+      });
       return;
     }
     setPending(offerFor.id);
@@ -165,14 +189,17 @@ function OpportunitiesPage() {
       await submitCompanyOffer({
         request_id: offerFor.id,
         investor_id: user.id,
-        amount: offerFor.amount,
+        amount: Number(offer.amount) || 0,
+        duration_months: Math.round(Number(offer.duration_months) || 0),
+        duration_days: Math.round(Number(offer.duration_days) || 0),
         company_name: offer.company_name.trim(),
         company_phone: offer.company_phone.trim(),
         company_location: offer.company_location.trim(),
         scope_of_work: offer.scope_of_work.trim(),
         proposed_works: offer.proposed_works.trim(),
-        payment_method: offer.payment_method.trim(),
-        warranty: offer.warranty.trim(),
+        payment_method: offer.payment_method,
+        payment_schedule: isInstallments ? schedule : [],
+        warranty: `${offer.warranty_duration.trim()} — يشمل: ${offer.warranty_coverage.trim()}`,
         company_notes: offer.company_notes.trim(),
       });
       await queryClient.invalidateQueries({ queryKey: ["my-interests"] });
@@ -455,7 +482,113 @@ function OpportunitiesPage() {
               />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              
+              <div>
+                <Label className="text-xs">قيمة العرض</Label>
+                <Input
+                  className="mt-2"
+                  inputMode="numeric"
+                  value={offer.amount}
+                  onChange={(e) => setOfferField("amount")(e.target.value)}
+                  placeholder={`مثال: ${offerFor?.suggested ?? 0}`}
+                />
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  المبلغ المقترح لتنفيذ المشروع بالكامل.
+                </p>
+              </div>
+              <div>
+                <Label className="text-xs">مدة التنفيذ</Label>
+                <div className="mt-2 flex gap-2">
+                  <Input
+                    inputMode="numeric"
+                    value={offer.duration_months}
+                    onChange={(e) => setOfferField("duration_months")(e.target.value)}
+                    placeholder="أشهر"
+                  />
+                  <Input
+                    inputMode="numeric"
+                    value={offer.duration_days}
+                    onChange={(e) => setOfferField("duration_days")(e.target.value)}
+                    placeholder="أيام"
+                  />
+                </div>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">طريقة الدفع</Label>
+              <Select
+                value={offer.payment_method}
+                onValueChange={setOfferField("payment_method")}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {offerPaymentTypes.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {offer.payment_method === "على دفعات" && (
+              <div className="space-y-2 rounded-xl border border-border p-3">
+                <Label className="text-xs">جدول الدفعات</Label>
+                <p className="text-[11px] text-muted-foreground">
+                  مثال: 30% عند بدء العمل، 40% عند إنجاز المرحلة الرئيسية، 30% عند اكتمال المشروع.
+                </p>
+                {schedule.map((row, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input
+                      className="w-20"
+                      inputMode="numeric"
+                      value={row.percentage || ""}
+                      onChange={(e) => setScheduleField(i, "percentage")(e.target.value)}
+                      placeholder="%"
+                    />
+                    <Input
+                      className="flex-1"
+                      value={row.stage}
+                      onChange={(e) => setScheduleField(i, "stage")(e.target.value)}
+                      placeholder="مرحلة التنفيذ — مثال: بدء العمل"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => removeScheduleRow(i)}
+                      disabled={schedule.length === 1}
+                    >
+                      حذف
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" size="sm" variant="outline" onClick={addScheduleRow}>
+                  + إضافة دفعة
+                </Button>
+              </div>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className="text-xs">مدة الضمان</Label>
+                <Input
+                  className="mt-2"
+                  value={offer.warranty_duration}
+                  onChange={(e) => setOfferField("warranty_duration")(e.target.value)}
+                  placeholder="مثال: سنة واحدة"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">ما يشمله الضمان</Label>
+                <Input
+                  className="mt-2"
+                  value={offer.warranty_coverage}
+                  onChange={(e) => setOfferField("warranty_coverage")(e.target.value)}
+                  placeholder="مثال: عيوب التنفيذ"
+                />
+              </div>
             </div>
             <div>
               <Label className="text-xs">ملاحظات الشركة (اختياري)</Label>

@@ -9,11 +9,13 @@ import {
   fetchOffersForMyRequests,
   fetchRequestPrivateDetails,
   reportCommissionPayment,
+  formatDuration,
   formatSAR,
   interestStatusLabels,
   notifyUser,
   timeAgo,
   updateInterest,
+  type PaymentScheduleItem,
 } from "@/lib/db";
 
 type OfferRow = {
@@ -29,6 +31,9 @@ type OfferRow = {
   scope_of_work: string;
   proposed_works: string;
   payment_method: string;
+  duration_months: number;
+  duration_days: number;
+  payment_schedule: PaymentScheduleItem[];
   warranty: string;
   company_notes: string;
   commission_amount: number;
@@ -44,6 +49,14 @@ function OfferDetails({ offer, showContact }: { offer: OfferRow; showContact: bo
         </dd>
       </div>
       <div>
+        <dt className="text-muted-foreground">قيمة العرض</dt>
+        <dd className="font-bold text-gold">{formatSAR(Number(offer.amount))}</dd>
+      </div>
+      <div>
+        <dt className="text-muted-foreground">مدة التنفيذ</dt>
+        <dd>{formatDuration(offer.duration_months, offer.duration_days)}</dd>
+      </div>
+      <div>
         <dt className="text-muted-foreground">نطاق العمل</dt>
         <dd>{offer.scope_of_work || "—"}</dd>
       </div>
@@ -55,6 +68,18 @@ function OfferDetails({ offer, showContact }: { offer: OfferRow; showContact: bo
         <dt className="text-muted-foreground">طريقة الدفع</dt>
         <dd>{offer.payment_method || "—"}</dd>
       </div>
+      {offer.payment_method === "على دفعات" && offer.payment_schedule?.length > 0 && (
+        <div className="sm:col-span-2">
+          <dt className="text-muted-foreground">جدول الدفعات</dt>
+          <dd className="mt-1 space-y-1">
+            {offer.payment_schedule.map((s, i) => (
+              <p key={i}>
+                • {s.percentage}% — {s.stage}
+              </p>
+            ))}
+          </dd>
+        </div>
+      )}
       <div>
         <dt className="text-muted-foreground">الضمان</dt>
         <dd>{offer.warranty || "—"}</dd>

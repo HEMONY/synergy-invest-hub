@@ -707,6 +707,12 @@ export const interestStatusLabels: Record<string, string> = {
   rejected: "مرفوض",
 };
 
+/** خيارات طريقة دفع عرض الشركة. */
+export const offerPaymentTypes = ["دفعة واحدة", "على دفعات"] as const;
+
+/** بند واحد في جدول الدفعات: نسبة الدفعة والمرحلة المرتبطة بها. */
+export type PaymentScheduleItem = { percentage: number; stage: string };
+
 export type CompanyOfferInput = {
   request_id: string;
   investor_id: string;
@@ -717,6 +723,9 @@ export type CompanyOfferInput = {
   scope_of_work: string;
   proposed_works: string;
   payment_method: string;
+  duration_months: number;
+  duration_days: number;
+  payment_schedule: PaymentScheduleItem[];
   warranty: string;
   company_notes: string;
 };
