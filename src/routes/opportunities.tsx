@@ -489,10 +489,10 @@ function OpportunitiesPage() {
                   inputMode="numeric"
                   value={offer.amount}
                   onChange={(e) => setOfferField("amount")(e.target.value)}
-                  placeholder={`مثال: ${offerFor?.suggested ?? 0}`}
+                  placeholder={`  المبلغ المقترح لتنفيذ المشروع بالكامل. مثال: ${offerFor?.suggested ?? 0}`}
                 />
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  المبلغ المقترح لتنفيذ المشروع بالكامل.
+                 
                 </p>
               </div>
               <div>
