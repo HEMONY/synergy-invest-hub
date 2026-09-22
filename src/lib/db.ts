@@ -712,7 +712,11 @@ export const offerPaymentTypes = ["دفعة واحدة", "على دفعات"] as
 
 /** بند واحد في جدول الدفعات: نسبة الدفعة والمرحلة المرتبطة بها. */
 export type PaymentScheduleItem = { percentage: number; stage: string };
+/** خيارات طريقة دفع عرض الشركة. */
+export const offerPaymentTypes = ["دفعة واحدة", "على دفعات"] as const;
 
+/** بند واحد في جدول الدفعات: نسبة الدفعة والمرحلة المرتبطة بها (يُدمَج نصياً في حقل طريقة الدفع). */
+export type PaymentScheduleItem = { percentage: number; stage: string };
 export type CompanyOfferInput = {
   request_id: string;
   investor_id: string;

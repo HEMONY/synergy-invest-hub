@@ -57,8 +57,12 @@ function OfferDetails({ offer, showContact }: { offer: OfferRow; showContact: bo
         <dd>{formatDuration(offer.duration_months, offer.duration_days)}</dd>
       </div>
       <div>
-        <dt className="text-muted-foreground">نطاق العمل</dt>
-        <dd>{offer.scope_of_work || "—"}</dd>
+        <dt className="text-muted-foreground">قيمة العرض</dt>
+        <dd className="font-bold text-gold">{formatSAR(Number(offer.amount))}</dd>
+      </div>
+      <div className="sm:col-span-2">
+        <dt className="text-muted-foreground">نطاق العمل ومدة التنفيذ</dt>
+        <dd className="whitespace-pre-line">{offer.scope_of_work || "—"}</dd>
       </div>
       <div>
         <dt className="text-muted-foreground">الأعمال المقترحة</dt>

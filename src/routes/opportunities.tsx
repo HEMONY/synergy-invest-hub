@@ -121,7 +121,7 @@ function OpportunitiesPage() {
       (o.district + o.city + o.damage_description + o.title).includes(applied.query.trim()),
   );
 
-  const [offerFor, setOfferFor] = useState<{ id: string; code: string; suggested: number } | null>(
+    const [offerFor, setOfferFor] = useState<{ id: string; code: string; suggested: number } | null>(
     null,
   );
   const [offer, setOffer] = useState({
@@ -186,19 +186,23 @@ function OpportunitiesPage() {
     }
     setPending(offerFor.id);
     try {
+      const durationText = formatDuration(
+        Math.round(Number(offer.duration_months) || 0),
+        Math.round(Number(offer.duration_days) || 0),
+      );
+      const scheduleText = isInstallments
+        ? " — " + schedule.map((s) => `${s.percentage}% ${s.stage}`).join("، ")
+        : "";
       await submitCompanyOffer({
         request_id: offerFor.id,
         investor_id: user.id,
         amount: Number(offer.amount) || 0,
-        duration_months: Math.round(Number(offer.duration_months) || 0),
-        duration_days: Math.round(Number(offer.duration_days) || 0),
         company_name: offer.company_name.trim(),
         company_phone: offer.company_phone.trim(),
         company_location: offer.company_location.trim(),
-        scope_of_work: offer.scope_of_work.trim(),
+        scope_of_work: `مدة التنفيذ: ${durationText}\n${offer.scope_of_work.trim()}`,
         proposed_works: offer.proposed_works.trim(),
-        payment_method: offer.payment_method,
-        payment_schedule: isInstallments ? schedule : [],
+        payment_method: `${offer.payment_method}${scheduleText}`,
         warranty: `${offer.warranty_duration.trim()} — يشمل: ${offer.warranty_coverage.trim()}`,
         company_notes: offer.company_notes.trim(),
       });
