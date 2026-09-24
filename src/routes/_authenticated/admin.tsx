@@ -769,7 +769,16 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
   const decideRefund = useMutation({
     mutationFn: ({ id, status }: { id: string; status: "approved" | "rejected" }) =>
       decideRefundRequest(id, status, user?.id ?? ""),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      const refund = refunds.find((r) => r.id === variables.id);
+      if (refund && variables.status === "approved") {
+        notifyUser(
+          refund.requested_by,
+          "payment",
+          "تمت الموافقة على طلب الاسترداد",
+          "تمت الموافقة على استرداد مبلغك، وسيُعاد إليك عبر نفس وسيلة الدفع التي استخدمتها.",
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ["refund-requests", request.id] });
       toast.success("تم تحديث طلب الاسترداد");
     },

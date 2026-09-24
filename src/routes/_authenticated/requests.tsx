@@ -15,6 +15,8 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  bankakAccount,
+  uploadPaymentReceipt,
   cancelMyRequest,
   commissionNote,
   conditionLabels,
@@ -229,6 +231,7 @@ function ProjectPaymentActions({
   const [refundPaymentId, setRefundPaymentId] = useState("");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
+  const [receipt, setReceipt] = useState<File | null>(null);
 
   const { data: payments = [] } = useQuery({
     queryKey: ["project-payments", project.id],
@@ -248,16 +251,22 @@ function ProjectPaymentActions({
       toast.error("أدخل مبلغ الدفعة");
       return;
     }
+    if (!receipt) {
+      toast.error("أرفق إشعار التحويل البنكي");
+      return;
+    }
     setLoading(true);
     try {
+      const receipt_path = await uploadPaymentReceipt(ownerId, receipt);
       await payProjectInstallment({
         request_id: project.id,
         amount: value,
-        payment_method: method,
+        payment_method: "تحويل بنكي (بنكك)",
         owner_id: ownerId,
+        receipt_path,
       });
-      toast.success("تم الدفع وتأكيده تلقائياً", {
-        description: "سيتم صرف المبلغ للشركة العقارية حسب مراحل الإنجاز.",
+      toast.success("تم إرسال إشعار الدفع", {
+        description: "سيتم تأكيد استلام المبلغ من إدارة سينرجي.",
       });
       resetAndClose();
       queryClient.invalidateQueries({ queryKey: ["project-payments", project.id] });
@@ -300,35 +309,33 @@ function ProjectPaymentActions({
   if (mode === "pay") {
     return (
       <div className="mt-5 rounded-xl border border-gold/30 p-4">
-        <p className="text-xs font-bold text-gold">الدفع الإلكتروني</p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <div>
-            <Label className="text-xs">مبلغ الدفعة</Label>
-            <Input
-              className="mt-2"
-              inputMode="numeric"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label className="text-xs">طريقة الدفع</Label>
-            <select
-              className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-            >
-              {paymentMethods.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
+        <p className="text-xs font-bold text-gold">الدفع عبر بنكك</p>
+        <div className="mt-3 rounded-lg bg-muted/60 p-3 text-xs leading-6">
+          <p>البنك: {bankakAccount.bankName}</p>
+          <p>رقم الحساب: {bankakAccount.accountNumber}</p>
+          <p>اسم صاحب الحساب: {bankakAccount.accountHolder}</p>
+        </div>
+        <div className="mt-3">
+          <Label className="text-xs">مبلغ الدفعة</Label>
+          <Input
+            className="mt-2"
+            inputMode="numeric"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </div>
+        <div className="mt-3">
+          <Label className="text-xs">إرفاق إشعار بنكك</Label>
+          <Input
+            className="mt-2"
+            type="file"
+            accept="image/*,.pdf"
+            onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
+          />
         </div>
         <div className="mt-3 flex gap-2">
           <Button size="sm" variant="gold" disabled={loading} onClick={pay}>
-            {loading ? "جارٍ الدفع..." : "تأكيد الدفع"}
+            {loading ? "جارٍ الإرسال..." : "تأكيد الدفع"}
           </Button>
           <Button size="sm" variant="ghost" onClick={resetAndClose}>
             إلغاء

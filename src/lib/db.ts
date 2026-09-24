@@ -384,6 +384,7 @@ export async function createProjectPayment(input: {
   payment_method?: string;
   paid_at?: string;
   created_by: string;
+  receipt_path?: string;   
 }) {
   const { data, error } = await supabase
     .from("project_payments")
@@ -396,13 +397,30 @@ export async function createProjectPayment(input: {
 
 /** طرق الدفع المتاحة لدفعة المشروع. */
 export const paymentMethods = ["دفع إلكتروني", "تحويل بنكي", "محفظة إلكترونية"] as const;
+export const bankakAccount = {
+  bankName: "بنكك",
+  accountNumber: "4734389",
+  accountHolder: "عبدالله إدريس عبدالله أحمد",
+};
 
+/** رفع صورة/ملف إشعار التحويل البنكي. */
+export async function uploadPaymentReceipt(userId: string, file: File) {
+  const ext = file.name.split(".").pop() ?? "bin";
+  const path = `${userId}/receipts/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabase.storage.from("documents").upload(path, file, {
+    contentType: file.type || "application/octet-stream",
+    upsert: false,
+  });
+  if (error) throw error;
+  return path;
+}
 /** العميل يدفع دفعة على مشروعه مباشرة — تُخصم العمولة تلقائياً وتُؤكَّد الدفعة فوراً. */
 export async function payProjectInstallment(input: {
   request_id: string;
   amount: number;
   payment_method: string;
   owner_id: string;
+  receipt_path?: string;   
 }) {
   const commission_rate = await fetchPaymentCommissionRate();
   return createProjectPayment({
@@ -411,6 +429,7 @@ export async function payProjectInstallment(input: {
     commission_rate,
     payment_method: input.payment_method,
     created_by: input.owner_id,
+    receipt_path: input.receipt_path,   
   });
 }
 

@@ -166,7 +166,7 @@ export function OwnerOffersPanel({ ownerId }: { ownerId: string }) {
               {interestStatusLabels[o.status] ?? o.status} · {timeAgo(o.created_at)}
             </p>
 
-            <OfferDetails offer={offer} showContact={o.status === "commission_paid"} />
+            <OfferDetails offer={offer} showContact={false} />
 
             {o.status === "presented" && (
               <div className="mt-4 flex flex-wrap gap-2">

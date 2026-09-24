@@ -168,7 +168,7 @@ function OpportunitiesPage() {
       ["اسم الشركة", offer.company_name],
       ["رقم هاتف الشركة", offer.company_phone],
       ["موقع الشركة", offer.company_location],
-      ["نطاق العمل", offer.scope_of_work],
+      //["نطاق العمل", offer.scope_of_work],
       ["الأعمال المقترحة", offer.proposed_works],
       ["مدة الضمان", offer.warranty_duration],
       ["ما يشمله الضمان", offer.warranty_coverage],

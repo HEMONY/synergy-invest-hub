@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Building2, TrendingUp } from "lucide-react";
+import { Building2, TrendingUp, Eye, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -66,6 +66,8 @@ function AuthPage() {
   const [otpEmail, setOtpEmail] = useState("");
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -101,7 +103,12 @@ function AuthPage() {
       return;
     }
     if (error) {
-      toast.error("تعذّر إنشاء الحساب", { description: error.message });
+      const isWeakPassword = /weak|breach|compromised/i.test(error.message);
+      toast.error("تعذّر إنشاء الحساب", {
+        description: isWeakPassword
+          ? "كلمة المرور ضعيفة، الرجاء اختيار كلمة مرور أخرى أقوى."
+          : error.message,
+      });
       return;
     }
 
@@ -251,7 +258,7 @@ function AuthPage() {
                   {(
                     [
                       { key: "owner", label: "صاحب عقار", icon: Building2 },
-                      { key: "investor", label: "شركة القطاع العقاري", icon: TrendingUp },
+                      { key: "investor", label: "شركة قطاع عقاري", icon: TrendingUp },
                     ] as const
                   ).map((r) => (
                     <button
@@ -293,14 +300,24 @@ function AuthPage() {
               </div>
               <div>
                 <Label>كلمة المرور</Label>
-                <Input
-                  className="mt-2"
-                  type="password"
-                  dir="ltr"
-                  placeholder="••••••••"
-                  value={signup.password}
-                  onChange={(e) => setSignup((s) => ({ ...s, password: e.target.value }))}
-                />
+                <div className="relative mt-2">
+                  <Input
+                    type={showSignupPassword ? "text" : "password"}
+                    dir="ltr"
+                    className="pr-10"
+                    placeholder="••••••••"
+                    value={signup.password}
+                    onChange={(e) => setSignup((s) => ({ ...s, password: e.target.value }))}
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    className="absolute inset-y-0 right-3 flex items-center text-muted-foreground"
+                    onClick={() => setShowSignupPassword((v) => !v)}
+                  >
+                    {showSignupPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <p className="rounded-2xl border border-dashed border-border p-4 text-xs leading-6 text-muted-foreground">
@@ -345,14 +362,24 @@ function AuthPage() {
               </div>
               <div>
                 <Label>كلمة المرور</Label>
-                <Input
-                  className="mt-2"
-                  type="password"
-                  dir="ltr"
-                  placeholder="••••••••"
-                  value={login.password}
-                  onChange={(e) => setLogin((s) => ({ ...s, password: e.target.value }))}
-                />
+                <div className="relative mt-2">
+                  <Input
+                    type={showLoginPassword ? "text" : "password"}
+                    dir="ltr"
+                    className="pr-10"
+                    placeholder="••••••••"
+                    value={login.password}
+                    onChange={(e) => setLogin((s) => ({ ...s, password: e.target.value }))}
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    className="absolute inset-y-0 right-3 flex items-center text-muted-foreground"
+                    onClick={() => setShowLoginPassword((v) => !v)}
+                  >
+                    {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
               <Button
                 variant="gold"
