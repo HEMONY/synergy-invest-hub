@@ -963,12 +963,8 @@ function RequestsSection() {
 }
 
 const matchingFlow: { status: string; label: string; next?: string }[] = [
-  { status: "pending", label: "بدء المراجعة", next: "under_review" },
+  { status: "pending", label: "عرض على صاحب المشروع", next: "presented" },
   { status: "under_review", label: "عرض على صاحب المشروع", next: "presented" },
-  { status: "owner_approved", label: "اعتماد الربط", next: "approved" },
-  { status: "approved", label: "تأكيد استلام العمولة", next: "commission_confirmed" },
-  { status: "commission_reported", label: "تأكيد استلام العمولة", next: "commission_confirmed" },
-  { status: "commission_confirmed", label: "فتح التواصل", next: "commission_paid" },
 ];
 
 function MatchingSection() {
@@ -981,7 +977,7 @@ function MatchingSection() {
     queryKey: ["admin-request-private"],
     queryFn: fetchAllRequestPrivateDetails,
   });
-  const [commission, setCommission] = useState<Record<string, string>>({});
+  //const [commission, setCommission] = useState<Record<string, string>>({});
 
   const mutate = useMutation({
     mutationFn: async ({
@@ -1115,35 +1111,7 @@ function MatchingSection() {
             )}
 
             <div className="mt-4 flex flex-wrap items-end gap-2">
-              <div>
-                <Label className="text-xs">عمولة سينرجي</Label>
-                <Input
-                  className="mt-2 w-40"
-                  inputMode="numeric"
-                  value={commission[i.id] ?? String(i.commission_amount ?? 0)}
-                  onChange={(e) =>
-                    setCommission((c) => ({ ...c, [i.id]: e.target.value }))
-                  }
-                />
-              </div>
-              <Button
-                size="sm"
-                variant="outlineGold"
-                onClick={async () => {
-                  try {
-                    await setCommissionAmount(
-                      i.id,
-                      num(commission[i.id] ?? String(i.commission_amount ?? 0)),
-                    );
-                    queryClient.invalidateQueries({ queryKey: ["admin-interests"] });
-                    toast.success("تم حفظ قيمة العمولة");
-                  } catch (err) {
-                    toast.error("تعذر حفظ العمولة", { description: (err as Error).message });
-                  }
-                }}
-              >
-                حفظ العمولة
-              </Button>
+              
 
               {step?.next && (
                 <Button
@@ -1164,21 +1132,17 @@ function MatchingSection() {
                 </Button>
               )}
 
-              {i.status !== "commission_paid" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    mutate.mutate({
-                      id: i.id,
-                      status: "rejected",
-                      requestId: i.request_id,
-                      ownerId: r?.owner_id,
-                      investorId: i.investor_id,
-                      code: r?.code ?? "",
-                    })
-                  }
-                >
+              {(i.status === "pending" || i.status === "under_review") && (
+                <Button size="sm" variant="outline" onClick={() =>
+                  mutate.mutate({
+                    id: i.id,
+                    status: "rejected",
+                    requestId: i.request_id,
+                    ownerId: r?.owner_id,
+                    investorId: i.investor_id,
+                    code: r?.code ?? "",
+                  })
+                }>
                   رفض العرض
                 </Button>
               )}

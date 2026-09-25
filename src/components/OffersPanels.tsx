@@ -39,14 +39,12 @@ type OfferRow = {
   commission_amount: number;
 };
 
-function OfferDetails({ offer, showContact }: { offer: OfferRow; showContact: boolean }) {
+function OfferDetails({ offer }: { offer: OfferRow }) {
   return (
     <dl className="mt-4 grid gap-2 rounded-xl bg-muted/60 p-4 text-xs leading-6 sm:grid-cols-2">
       <div>
         <dt className="text-muted-foreground">الشركة</dt>
-        <dd className="font-bold">
-          {showContact ? offer.company_name || "—" : "شركة عقارية موثوقة (تُكشف بعد فتح التواصل)"}
-        </dd>
+        <dd className="font-bold">{offer.company_name || "—"}</dd>
       </div>
       <div>
         <dt className="text-muted-foreground">قيمة العرض</dt>
@@ -56,12 +54,8 @@ function OfferDetails({ offer, showContact }: { offer: OfferRow; showContact: bo
         <dt className="text-muted-foreground">مدة التنفيذ</dt>
         <dd>{formatDuration(offer.duration_months, offer.duration_days)}</dd>
       </div>
-      <div>
-        <dt className="text-muted-foreground">قيمة العرض</dt>
-        <dd className="font-bold text-gold">{formatSAR(Number(offer.amount))}</dd>
-      </div>
       <div className="sm:col-span-2">
-        <dt className="text-muted-foreground">نطاق العمل ومدة التنفيذ</dt>
+        <dt className="text-muted-foreground">نطاق العمل</dt>
         <dd className="whitespace-pre-line">{offer.scope_of_work || "—"}</dd>
       </div>
       <div>
@@ -92,13 +86,7 @@ function OfferDetails({ offer, showContact }: { offer: OfferRow; showContact: bo
         <dt className="text-muted-foreground">ملاحظات الشركة</dt>
         <dd>{offer.company_notes || "—"}</dd>
       </div>
-      {showContact && (
-        <div className="sm:col-span-2 rounded-lg border border-gold/40 bg-gold/5 p-3">
-          <p className="font-bold text-gold">بيانات التواصل مع الشركة</p>
-          <p>الهاتف: {offer.company_phone || "—"}</p>
-          <p>الموقع: {offer.company_location || "—"}</p>
-        </div>
-      )}
+      
     </dl>
   );
 }
@@ -166,7 +154,7 @@ export function OwnerOffersPanel({ ownerId }: { ownerId: string }) {
               {interestStatusLabels[o.status] ?? o.status} · {timeAgo(o.created_at)}
             </p>
 
-            <OfferDetails offer={offer} showContact={false} />
+            <OfferDetails offer={offer} />
 
             {o.status === "presented" && (
               <div className="mt-4 flex flex-wrap gap-2">

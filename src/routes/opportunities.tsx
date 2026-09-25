@@ -186,10 +186,6 @@ function OpportunitiesPage() {
     }
     setPending(offerFor.id);
     try {
-      const durationText = formatDuration(
-        Math.round(Number(offer.duration_months) || 0),
-        Math.round(Number(offer.duration_days) || 0),
-      );
       const scheduleText = isInstallments
         ? " — " + schedule.map((s) => `${s.percentage}% ${s.stage}`).join("، ")
         : "";
@@ -200,7 +196,7 @@ function OpportunitiesPage() {
         company_name: offer.company_name.trim(),
         company_phone: offer.company_phone.trim(),
         company_location: offer.company_location.trim(),
-        scope_of_work: `مدة التنفيذ: ${durationText}\n${offer.scope_of_work.trim()}`,
+        scope_of_work: offer.scope_of_work.trim(),
         proposed_works: offer.proposed_works.trim(),
         payment_method: `${offer.payment_method}${scheduleText}`,
         warranty: `${offer.warranty_duration.trim()} — يشمل: ${offer.warranty_coverage.trim()}`,
