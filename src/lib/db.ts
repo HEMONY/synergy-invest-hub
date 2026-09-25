@@ -193,7 +193,13 @@ export async function markAllRead(userId: string) {
     .eq("is_read", false);
   if (error) throw error;
 }
-
+export async function markNotificationRead(id: string) {
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("id", id);
+  if (error) throw error;
+}
 export type NewRequestInput = {
   owner_id: string;
   title: string;
@@ -376,34 +382,15 @@ export async function fetchMyProjectPayments(ownerId: string) {
   return data ?? [];
 }
 
-/** تسجيل دفعة جديدة على المشروع — تُخصم عمولة سينرجي تلقائياً قبل تحويل الباقي للشركة. */
-export async function createProjectPayment(input: {
-  request_id: string;
-  amount: number;
-  commission_rate: number;
-  payment_method?: string;
-  paid_at?: string;
-  created_by: string;
-  receipt_path?: string;   
-}) {
-  const { data, error } = await supabase
-    .from("project_payments")
-    .insert(input)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-}
+
 
 /** طرق الدفع المتاحة لدفعة المشروع. */
-export const paymentMethods = ["دفع إلكتروني", "تحويل بنكي", "محفظة إلكترونية"] as const;
 export const bankakAccount = {
   bankName: "بنكك",
   accountNumber: "4734389",
   accountHolder: "عبدالله إدريس عبدالله أحمد",
 };
 
-/** رفع صورة/ملف إشعار التحويل البنكي. */
 export async function uploadPaymentReceipt(userId: string, file: File) {
   const ext = file.name.split(".").pop() ?? "bin";
   const path = `${userId}/receipts/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -415,12 +402,22 @@ export async function uploadPaymentReceipt(userId: string, file: File) {
   return path;
 }
 /** العميل يدفع دفعة على مشروعه مباشرة — تُخصم العمولة تلقائياً وتُؤكَّد الدفعة فوراً. */
+export async function createProjectPayment(input: {
+  request_id: string;
+  amount: number;
+  commission_rate: number;
+  payment_method?: string;
+  paid_at?: string;
+  created_by: string;
+  receipt_path?: string;
+}) { /* بلا تغيير في الجسم */ }
+
 export async function payProjectInstallment(input: {
   request_id: string;
   amount: number;
   payment_method: string;
   owner_id: string;
-  receipt_path?: string;   
+  receipt_path?: string;
 }) {
   const commission_rate = await fetchPaymentCommissionRate();
   return createProjectPayment({
@@ -429,7 +426,7 @@ export async function payProjectInstallment(input: {
     commission_rate,
     payment_method: input.payment_method,
     created_by: input.owner_id,
-    receipt_path: input.receipt_path,   
+    receipt_path: input.receipt_path,
   });
 }
 

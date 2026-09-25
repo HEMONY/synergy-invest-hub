@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Building2, FileCheck2, Wallet } from "lucide-react";
 import { useState } from "react";
@@ -6,8 +6,7 @@ import { useState } from "react";
 import { PageHeader, SiteLayout } from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchNotifications, markAllRead, notificationKinds, timeAgo } from "@/lib/db";
-
+import { fetchNotifications, markAllRead, markNotificationRead, notificationKinds, timeAgo } from "@/lib/db";
 export const Route = createFileRoute("/_authenticated/notifications")({
   head: () => ({
     meta: [
@@ -38,6 +37,17 @@ function NotificationsPage() {
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const openNotification = async (n: { id: string; kind: string; is_read: boolean }) => {
+    if (!n.is_read) {
+      try {
+        await markNotificationRead(n.id);
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      } catch { /* تجاهل خطأ التعليم كمقروء */ }
+    }
+    if (n.kind === "verification") navigate({ to: "/account" });
+    else navigate({ to: "/requests" });
+};
   const [filter, setFilter] = useState<(typeof filters)[number]>("الكل");
 
   const { data: rows = [], isLoading } = useQuery({
@@ -98,7 +108,11 @@ function NotificationsPage() {
           {list.map((n) => {
             const Icon = icons[n.kind] ?? Bell;
             return (
-              <li key={n.id} className="card-surface flex items-start gap-4 p-5">
+              <li
+                key={n.id}
+                onClick={() => openNotification(n)}
+                className="card-surface flex cursor-pointer items-start gap-4 p-5 transition hover:border-gold/40"
+              >
                 <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-gold/15">
                   <Icon className="size-5 text-gold" strokeWidth={1.6} />
                 </span>

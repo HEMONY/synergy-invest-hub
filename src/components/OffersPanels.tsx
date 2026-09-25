@@ -8,7 +8,11 @@ import {
   fetchMyInterests,
   fetchOffersForMyRequests,
   fetchRequestPrivateDetails,
-  reportCommissionPayment,
+  fetchProjectPayments,
+  payProjectInstallment,
+  createRefundRequest,
+  bankakAccount,
+  uploadPaymentReceipt,
   formatDuration,
   formatSAR,
   interestStatusLabels,
@@ -18,6 +22,8 @@ import {
   type PaymentScheduleItem,
 } from "@/lib/db";
 
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 type OfferRow = {
   id: string;
   request_id: string;
@@ -90,7 +96,132 @@ function OfferDetails({ offer }: { offer: OfferRow }) {
     </dl>
   );
 }
+function OfferPaymentAndRefund({ offer, ownerId, code }: { offer: OfferRow; ownerId: string; code: string }) {
+  const queryClient = useQueryClient();
+  const [mode, setMode] = useState<"idle" | "pay" | "refund">("idle");
+  const [receipt, setReceipt] = useState<File | null>(null);
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  const { data: payments = [] } = useQuery({
+    queryKey: ["offer-payments", offer.request_id],
+    queryFn: () => fetchProjectPayments(offer.request_id),
+  });
+
+  const pay = async () => {
+    if (!receipt) {
+      toast.error("أرفق إشعار التحويل البنكي");
+      return;
+    }
+    setLoading(true);
+    try {
+      const receipt_path = await uploadPaymentReceipt(ownerId, receipt);
+      await payProjectInstallment({
+        request_id: offer.request_id,
+        amount: Number(offer.amount),
+        payment_method: "تحويل بنكي (بنكك)",
+        owner_id: ownerId,
+        receipt_path,
+      });
+      toast.success("تم إرسال إشعار الدفع", {
+        description: "سيتم تأكيد استلام المبلغ من إدارة سينرجي.",
+      });
+      setMode("idle");
+      setReceipt(null);
+      queryClient.invalidateQueries({ queryKey: ["offer-payments", offer.request_id] });
+    } catch (err) {
+      toast.error("تعذر الدفع", { description: (err as Error).message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refund = async () => {
+    if (payments.length === 0) {
+      toast.error("لا توجد دفعة مسجلة لاستردادها");
+      return;
+    }
+    if (!reason.trim()) {
+      toast.error("اذكر سبب الاسترداد");
+      return;
+    }
+    const last = payments[payments.length - 1];
+    setLoading(true);
+    try {
+      await createRefundRequest({
+        payment_id: last.id,
+        request_id: offer.request_id,
+        amount: Number(last.amount),
+        reason: reason.trim(),
+        requested_by: ownerId,
+      });
+      toast.success("تم إرسال طلب الاسترداد", {
+        description: "ستراجعه إدارة سينرجي من «إدارة الطلبات والمشاريع».",
+      });
+      setMode("idle");
+      setReason("");
+    } catch (err) {
+      toast.error("تعذر إرسال الطلب", { description: (err as Error).message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (mode === "pay") {
+    return (
+      <div className="mt-4 rounded-xl border border-gold/30 p-4">
+        <p className="text-xs font-bold text-gold">الدفع عبر بنكك</p>
+        <div className="mt-3 rounded-lg bg-muted/60 p-3 text-xs leading-6">
+          <p>حساب: {bankakAccount.bankName}</p>
+          <p>رقم الحساب: {bankakAccount.accountNumber}</p>
+          <p>اسم صاحب الحساب: {bankakAccount.accountHolder}</p>
+        </div>
+        <div className="mt-3">
+          <Label className="text-xs">إرفاق إشعار بنكك</Label>
+          <Input
+            className="mt-2"
+            type="file"
+            accept="image/*,.pdf"
+            onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
+          />
+        </div>
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" variant="gold" disabled={loading} onClick={pay}>
+            {loading ? "جارٍ الإرسال..." : "تأكيد الدفع"}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setMode("idle")}>إلغاء</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === "refund") {
+    return (
+      <div className="mt-4 rounded-xl border border-border p-4">
+        <p className="text-xs font-bold">طلب استرداد المبلغ</p>
+        <Input
+          className="mt-3"
+          placeholder="سبب الاسترداد"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" variant="outlineGold" disabled={loading} onClick={refund}>
+            {loading ? "جارٍ الإرسال..." : "إرسال الطلب"}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setMode("idle")}>إلغاء</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 flex gap-2">
+      <Button size="sm" variant="gold" onClick={() => setMode("pay")}>الدفع</Button>
+      <Button size="sm" variant="outline" onClick={() => setMode("refund")}>طلب استرداد المبلغ</Button>
+    </div>
+  );
+}
 /** العروض المقدمة على مشاريع صاحب الحساب. */
 export function OwnerOffersPanel({ ownerId }: { ownerId: string }) {
   const queryClient = useQueryClient();
@@ -155,6 +286,9 @@ export function OwnerOffersPanel({ ownerId }: { ownerId: string }) {
             </p>
 
             <OfferDetails offer={offer} />
+            {o.status === "owner_approved" && (
+              <OfferPaymentAndRefund offer={offer} ownerId={ownerId} code={code} />
+            )}
 
             {o.status === "presented" && (
               <div className="mt-4 flex flex-wrap gap-2">
