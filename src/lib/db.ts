@@ -382,6 +382,7 @@ export async function fetchMyProjectPayments(ownerId: string) {
   return data ?? [];
 }
 
+export const paymentMethods = ["دفع إلكتروني", "تحويل بنكي", "محفظة إلكترونية"] as const;
 
 
 /** طرق الدفع المتاحة لدفعة المشروع. */
@@ -410,7 +411,15 @@ export async function createProjectPayment(input: {
   paid_at?: string;
   created_by: string;
   receipt_path?: string;
-}) { /* بلا تغيير في الجسم */ }
+}) {
+  const { data, error } = await supabase
+    .from("project_payments")
+    .insert(input)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
 
 export async function payProjectInstallment(input: {
   request_id: string;
