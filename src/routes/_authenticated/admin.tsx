@@ -48,7 +48,7 @@ import {
   activityActions,
   commissionNote,
   paymentCommissionNote,
-  
+  formatDuration,
   conditionLabels,
   currencyOptions,
   createProjectPayment,
@@ -765,7 +765,21 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
     },
     onError: (e) => toast.error("تعذر الصرف", { description: (e as Error).message }),
   });
-
+  const confirmPayment = useMutation({
+    mutationFn: () => updateRequest(request.id, { status: "in_progress", stage_index: 5 }),
+    onSuccess: async () => {
+      await notifyUser(
+        request.owner_id,
+        "project",
+        "تم تأكيد الدفعة",
+        `تم تأكيد استلام دفعتك على المشروع ${request.code} — أصبح المشروع قيد التنفيذ.`,
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["my-requests"] });
+      toast.success("تم تأكيد الدفعة ونقل المشروع لقيد التنفيذ");
+    },
+    onError: (e) => toast.error("تعذر التأكيد", { description: (e as Error).message }),
+  });
   const decideRefund = useMutation({
     mutationFn: ({ id, status }: { id: string; status: "approved" | "rejected" }) =>
       decideRefundRequest(id, status, user?.id ?? ""),
@@ -825,6 +839,7 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
                 <th className="p-2">مبلغ الشركة</th>
                 <th className="p-2">تاريخ الدفع</th>
                 <th className="p-2">المتبقي</th>
+                <th className="p-2">الإشعار البنكي</th>
                 <th className="p-2">صرف الشركة</th>
               </tr>
             </thead>
@@ -839,6 +854,25 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
                     {new Date(p.paid_at).toLocaleDateString("en-GB")}
                   </td>
                   <td className="p-2">{formatSAR(Number(p.remaining_amount))}</td>
+                  <td className="p-2">
+                    {p.receipt_path ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            window.open(await documentUrl(p.receipt_path!), "_blank", "noopener");
+                          } catch (e) {
+                            toast.error("تعذر فتح الإشعار", { description: (e as Error).message });
+                          }
+                        }}
+                      >
+                        عرض الإشعار
+                      </Button>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
                   <td className="p-2">
                     {p.payout_status === "released" ? (
                       <span className="text-xs font-semibold text-green-600">تم الصرف</span>
@@ -858,6 +892,17 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {payments.length > 0 && !["matched", "in_progress", "completed"].includes(request.status) && (
+        <Button
+          size="sm"
+          variant="gold"
+          disabled={confirmPayment.isPending}
+          onClick={() => confirmPayment.mutate()}
+        >
+          {confirmPayment.isPending ? "جارٍ التأكيد..." : "تأكيد الدفعة — نقل المشروع لقيد التنفيذ"}
+        </Button>
       )}
 
       {refunds.length > 0 && (
@@ -1079,6 +1124,10 @@ function MatchingSection() {
               <div className="sm:col-span-2">
                 <dt className="text-muted-foreground">موقع الشركة</dt>
                 <dd>{i.company_location || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">مدة التنفيذ</dt>
+                <dd className="font-bold">{formatDuration(i.duration_months, i.duration_days)}</dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">نطاق العمل</dt>

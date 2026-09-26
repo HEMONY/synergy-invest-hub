@@ -199,6 +199,9 @@ function OpportunitiesPage() {
         scope_of_work: offer.scope_of_work.trim(),
         proposed_works: offer.proposed_works.trim(),
         payment_method: `${offer.payment_method}${scheduleText}`,
+        duration_months: Number(offer.duration_months) || 0,
+        duration_days: Number(offer.duration_days) || 0,
+        payment_schedule: isInstallments ? schedule : [],
         warranty: `${offer.warranty_duration.trim()} — يشمل: ${offer.warranty_coverage.trim()}`,
         company_notes: offer.company_notes.trim(),
       });
