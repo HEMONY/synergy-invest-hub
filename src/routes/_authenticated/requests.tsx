@@ -18,7 +18,6 @@ import {
   bankakAccount,
   uploadPaymentReceipt,
   cancelMyRequest,
-  commissionNote,
   conditionLabels,
   costLabel,
   createRefundRequest,
@@ -589,7 +588,7 @@ function RequestsPage() {
                     className="mt-2 h-2.5"
                   />
                   <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
-                    المرحلة الحالية: {projectStages[p.stage_index] ?? projectStages[0]} · {commissionNote}
+                    المرحلة الحالية: {projectStages[p.stage_index] ?? projectStages[0]} 
                   </p>
                 </div>
 

@@ -105,8 +105,8 @@ export function formatDuration(months: number, days = 0) {
   const parts: string[] = [];
   const m = Number(months) || 0;
   const d = Number(days) || 0;
-  if (m > 0) parts.push(`${m === 1 ? "شهر" : m === 2 ? "شهرين" : m <= 10 ? "أشهر" : "شهر"} ${m}`);
-  if (d > 0) parts.push(`${d === 1 ? "يوم" : d === 2 ? "يومين" : "يوم"} ${d}`);
+  if (m > 0) parts.push(m === 1 ? "شهر" : m === 2 ? "شهرين" : `${m} ${m <= 10 ? "أشهر" : "شهر"}`);
+  if (d > 0) parts.push(d === 1 ? "يوم" : d === 2 ? "يومين" : `${d} يوم`);
   return parts.length ? parts.join(" و ") : "غير محددة";
 }
 
@@ -447,7 +447,23 @@ export async function markPaymentReleased(id: string) {
     .eq("id", id);
   if (error) throw error;
 }
+export async function sendPaymentsToCompany(requestId: string, investorId: string, code: string) {
+  const { data, error } = await supabase
+    .from("project_payments").update({ sent_to_company: true })
+    .eq("request_id", requestId).select("id");
+  if (error) throw error;
+  await notifyUser(investorId, "payment", "تم إرسال جدول دفعات المشروع",
+    `جدول دفعات المشروع ${code} — عدد الدفعات: ${data?.length ?? 0}. راجعه من عروضك.`);
+}
 
+export async function sendRemainingToOwner(paymentId: string, amount: number, ownerId: string, code: string) {
+  const { error } = await supabase.from("project_payments")
+    .update({ remaining_amount: amount, remaining_sent_at: new Date().toISOString() })
+    .eq("id", paymentId);
+  if (error) throw error;
+  await notifyUser(ownerId, "payment", "المبلغ المتبقي لاعتماد الدفعة",
+    `المبلغ المتبقي لاعتماد الدفعة ${formatSAR(amount)} — المشروع ${code}`);
+}
 /* ---------- طلبات استرداد المبلغ ---------- */
 
 export type PaymentRefundRequest = Tables<"payment_refund_requests">;

@@ -55,6 +55,8 @@ import {
   decideRefundRequest,
   fetchRefundRequestsForRequest,
   markPaymentReleased,
+  sendPaymentsToCompany,
+  sendRemainingToOwner,
   refundStatusLabels,
   docTypeLabels,
   documentUrl,
@@ -739,6 +741,26 @@ function RequestFinancials({
   );
 }
 
+function RemainingCell({ p, request }: { p: { id: string; remaining_amount: number }; request: PropertyRequest }) {
+  const queryClient = useQueryClient();
+  const [value, setValue] = useState(String(p.remaining_amount ?? 0));
+  const send = useMutation({
+    mutationFn: () => sendRemainingToOwner(p.id, num(value), request.owner_id, request.code),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-payments", request.id] });
+      toast.success("تم إرسال المبلغ المتبقي للعميل");
+    },
+    onError: (e) => toast.error("تعذر الإرسال", { description: (e as Error).message }),
+  });
+  return (
+    <div className="flex items-center gap-1">
+      <Input className="h-8 w-24" inputMode="numeric" value={value} onChange={(e) => setValue(e.target.value)} />
+      <span>ج.س</span>
+      <Button size="sm" variant="outline" disabled={send.isPending} onClick={() => send.mutate()}>إرسال للعميل</Button>
+    </div>
+  );
+}
+
 function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -800,7 +822,22 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
   });
   const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const remaining = Math.max(Number(request.funding_needed) - totalPaid, 0);
-
+  const { data: interests = [] } = useQuery({ queryKey: ["admin-interests"], queryFn: fetchAllInterests });
+  const sendToCompany = useMutation({
+    mutationFn: async () => {
+      const it = interests.find(
+        (i) => i.request_id === request.id &&
+          ["owner_approved","approved","commission_reported","commission_confirmed","commission_paid"].includes(i.status),
+      );
+      if (!it) throw new Error("لا توجد شركة مرتبطة بهذا المشروع");
+      await sendPaymentsToCompany(request.id, it.investor_id, request.code);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-payments", request.id] });
+      toast.success("تم إرسال جدول الدفعات للشركة");
+    },
+    onError: (e) => toast.error("تعذر الإرسال", { description: (e as Error).message }),
+  });
   const addPayment = useMutation({
     mutationFn: () =>
       createProjectPayment({
@@ -836,6 +873,7 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
                 <th className="p-2">رقم الدفعة</th>
                 <th className="p-2">مبلغ الدفعة</th>
                 <th className="p-2">عمولة سينرجي</th>
+                <th className="p-2">عدد الدفعات</th>
                 <th className="p-2">مبلغ الشركة</th>
                 <th className="p-2">تاريخ الدفع</th>
                 <th className="p-2">المتبقي</th>
@@ -849,11 +887,12 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
                   <td className="p-2 font-bold">#{p.payment_number}</td>
                   <td className="p-2">{formatSAR(Number(p.amount))}</td>
                   <td className="p-2 text-muted-foreground">{formatSAR(Number(p.commission_amount))}</td>
+                  <td className="p-2">{payments.length}</td>
                   <td className="p-2 font-semibold">{formatSAR(Number(p.company_amount))}</td>
                   <td className="p-2 text-muted-foreground">
                     {new Date(p.paid_at).toLocaleDateString("en-GB")}
                   </td>
-                  <td className="p-2">{formatSAR(Number(p.remaining_amount))}</td>
+                  <td className="p-2"><RemainingCell p={p} request={request} /></td>
                   <td className="p-2">
                     {p.receipt_path ? (
                       <Button
@@ -892,6 +931,11 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
             </tbody>
           </table>
         </div>
+      )}
+      {payments.length > 0 && (
+        <Button size="sm" variant="gold" disabled={sendToCompany.isPending} onClick={() => sendToCompany.mutate()}>
+          {sendToCompany.isPending ? "جارٍ الإرسال..." : "إرسال للشركة"}
+        </Button>
       )}
 
       {payments.length > 0 && !["matched", "in_progress", "completed"].includes(request.status) && (
@@ -1125,13 +1169,10 @@ function MatchingSection() {
                 <dt className="text-muted-foreground">موقع الشركة</dt>
                 <dd>{i.company_location || "—"}</dd>
               </div>
-              <div>
-                <dt className="text-muted-foreground">مدة التنفيذ</dt>
-                <dd className="font-bold">{formatDuration(i.duration_months, i.duration_days)}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">نطاق العمل</dt>
-                <dd>{i.scope_of_work || "—"}</dd>
+              
+              <div className="sm:col-span-2 space-y-1">
+                <p><span className="text-muted-foreground">نطاق العمل: </span>{i.scope_of_work || "—"}</p>
+                <p><span className="text-muted-foreground">مدة التنفيذ: </span><span className="font-bold">{formatDuration(i.duration_months, i.duration_days)}</span></p>
               </div>
               <div>
                 <dt className="text-muted-foreground">الأعمال المقترحة</dt>

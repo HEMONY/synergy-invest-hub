@@ -58,13 +58,9 @@ function OfferDetails({ offer }: { offer: OfferRow }) {
         <dt className="text-muted-foreground">قيمة العرض</dt>
         <dd className="font-bold text-gold">{formatSAR(Number(offer.amount))}</dd>
       </div>
-      <div>
-        <dt className="text-muted-foreground">مدة التنفيذ</dt>
-        <dd>{formatDuration(offer.duration_months, offer.duration_days)}</dd>
-      </div>
-      <div className="sm:col-span-2">
-        <dt className="text-muted-foreground">نطاق العمل</dt>
-        <dd className="whitespace-pre-line">{offer.scope_of_work || "—"}</dd>
+      <div className="sm:col-span-2 space-y-1">
+        <p><span className="text-muted-foreground">نطاق العمل: </span>{offer.scope_of_work || "—"}</p>
+        <p><span className="text-muted-foreground">مدة التنفيذ: </span>{formatDuration(offer.duration_months, offer.duration_days)}</p>
       </div>
       <div>
         <dt className="text-muted-foreground">الأعمال المقترحة</dt>
@@ -98,6 +94,20 @@ function OfferDetails({ offer }: { offer: OfferRow }) {
     </dl>
   );
 }
+
+function RemainingNotice({ requestId }: { requestId: string }) {
+  const { data: payments = [] } = useQuery({
+    queryKey: ["offer-payments", requestId],
+    queryFn: () => fetchProjectPayments(requestId),
+  });
+  const last = [...payments].reverse().find((p) => p.remaining_sent_at && Number(p.remaining_amount) > 0);
+  if (!last) return null;
+  return (
+    <p className="mt-3 rounded-xl border border-gold/40 bg-gold/5 p-3 text-xs font-bold text-gold">
+      المبلغ المتبقي لاعتماد الدفعة {formatSAR(Number(last.remaining_amount))}
+    </p>
+  );
+}
 function OfferPaymentAndRefund({ offer, ownerId, code }: { offer: OfferRow; ownerId: string; code: string }) {
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<"idle" | "pay" | "refund">("idle");
@@ -125,6 +135,20 @@ function OfferPaymentAndRefund({ offer, ownerId, code }: { offer: OfferRow; owne
         owner_id: ownerId,
         receipt_path,
       });
+      const staff = await fetchAllUserRoles();
+      const staffIds = [...new Set(
+        staff.filter((r) => r.role === "admin" || r.role === "supervisor").map((r) => r.user_id),
+      )];
+      await Promise.all(
+        staffIds.map((id) =>
+          notifyUser(
+            id,
+            "payment",
+            "دفعة جديدة بانتظار التأكيد",
+            `وصلت دفعة على المشروع ${code} — راجع الإشعار البنكي من «إدارة الطلبات والمشاريع».`,
+          ),
+        ),
+      );
       toast.success("تم إرسال إشعار الدفع", {
         description: "سيتم تأكيد استلام المبلغ من إدارة سينرجي.",
       });
@@ -288,6 +312,7 @@ export function OwnerOffersPanel({ ownerId }: { ownerId: string }) {
             </p>
 
             <OfferDetails offer={offer} />
+            <RemainingNotice requestId={offer.request_id} />
             {o.status === "owner_approved" && (
               <OfferPaymentAndRefund offer={offer} ownerId={ownerId} code={code} />
             )}
@@ -316,6 +341,42 @@ export function OwnerOffersPanel({ ownerId }: { ownerId: string }) {
         );
       })}
     </>
+  );
+}
+
+function CompanyPaymentsTable({ requestId }: { requestId: string }) {
+  const { data: all = [] } = useQuery({
+    queryKey: ["company-payments", requestId],
+    queryFn: () => fetchProjectPayments(requestId),
+  });
+  const payments = all.filter((p) => p.sent_to_company);
+  if (payments.length === 0) return null;
+  return (
+    <div className="mt-4 overflow-x-auto rounded-xl border border-border p-3">
+      <table className="w-full text-right text-xs">
+        <thead className="text-muted-foreground">
+          <tr>
+            <th className="p-2">رقم الدفعة</th><th className="p-2">مبلغ الدفعة</th>
+            <th className="p-2">عمولة سينرجي</th><th className="p-2">مبلغ الشركة</th>
+            <th className="p-2">تاريخ الدفع</th><th className="p-2">عدد الدفعات</th>
+            <th className="p-2">صرف الشركة</th>
+          </tr>
+        </thead>
+        <tbody>
+          {payments.map((p) => (
+            <tr key={p.id} className="border-t border-border">
+              <td className="p-2 font-bold">#{p.payment_number}</td>
+              <td className="p-2">{formatSAR(Number(p.amount))}</td>
+              <td className="p-2">{formatSAR(Number(p.commission_amount))}</td>
+              <td className="p-2 font-semibold">{formatSAR(Number(p.company_amount))}</td>
+              <td className="p-2">{new Date(p.paid_at).toLocaleDateString("en-GB")}</td>
+              <td className="p-2">{payments.length}</td>
+              <td className="p-2">{p.payout_status === "released" ? "تم الصرف" : "بانتظار الصرف"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -429,6 +490,7 @@ export function CompanyOffersPanel({ userId }: { userId: string }) {
               )}
             </div>
           )}
+          <CompanyPaymentsTable requestId={o.request_id} />
         </article>
       ))}
     </>
