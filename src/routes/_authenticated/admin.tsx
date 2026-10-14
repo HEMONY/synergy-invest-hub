@@ -1058,6 +1058,7 @@ const matchingFlow: { status: string; label: string; next?: string }[] = [
 
 function MatchingSection() {
   const queryClient = useQueryClient();
+  const [installmentAmounts, setInstallmentAmounts] = useState<Record<string, string>>({});
   const { data: interests = [], isLoading } = useQuery({
     queryKey: ["admin-interests"],
     queryFn: fetchAllInterests,
@@ -1076,6 +1077,7 @@ function MatchingSection() {
       ownerId,
       investorId,
       code,
+      presentedInstallmentAmount,
     }: {
       id: string;
       status: string;
@@ -1083,14 +1085,15 @@ function MatchingSection() {
       ownerId?: string;
       investorId: string;
       code: string;
+      presentedInstallmentAmount?: number;
     }) => {
-      await updateInterest(id, status);
+      await updateInterest(id, status, presentedInstallmentAmount);
       if (status === "presented" && ownerId) {
         await notifyUser(
           ownerId,
           "request",
           "عرض جديد على مشروعك",
-          `وصل عرض من شركة عقارية على المشروع ${code} — راجعه من صفحة طلباتي.`,
+          `وصل عرض من شركة عقارية على المشروع ${code} بقيمة ${formatSAR(presentedInstallmentAmount ?? 0)} للدفعة — راجعه من صفحة طلباتي.`,
         );
       }
       if (status === "approved") {
@@ -1179,6 +1182,10 @@ function MatchingSection() {
                 <dd>{i.proposed_works || "—"}</dd>
               </div>
               <div>
+                <dt className="text-muted-foreground">قيمة العرض</dt>
+                <dd className="font-bold text-gold">{formatSAR(Number(i.amount))}</dd>
+              </div>
+              <div>
                 <dt className="text-muted-foreground">طريقة الدفع</dt>
                 <dd>{i.payment_method || "—"}</dd>
               </div>
@@ -1204,22 +1211,49 @@ function MatchingSection() {
               
 
               {step?.next && (
-                <Button
-                  size="sm"
-                  variant="gold"
-                  onClick={() =>
-                    mutate.mutate({
-                      id: i.id,
-                      status: step.next!,
-                      requestId: i.request_id,
-                      ownerId: r?.owner_id,
-                      investorId: i.investor_id,
-                      code: r?.code ?? "",
-                    })
-                  }
-                >
-                  {step.label}
-                </Button>
+                <>
+                  <div className="min-w-48 space-y-1">
+                    <Label htmlFor={`installment-${i.id}`} className="text-xs">مبلغ الدفعة</Label>
+                    <Input
+                      id={`installment-${i.id}`}
+                      type="number"
+                      min="0"
+                      max={Number(i.amount)}
+                      step="any"
+                      inputMode="decimal"
+                      placeholder="أدخل مبلغ الدفعة"
+                      value={installmentAmounts[i.id] ?? (i.presented_installment_amount == null ? "" : String(i.presented_installment_amount))}
+                      onChange={(event) =>
+                        setInstallmentAmounts((current) => ({ ...current, [i.id]: event.target.value }))
+                      }
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="gold"
+                    disabled={mutate.isPending}
+                    onClick={() => {
+                      const installmentAmount = Number(installmentAmounts[i.id] ?? i.presented_installment_amount);
+                      if (!Number.isFinite(installmentAmount) || installmentAmount <= 0 || installmentAmount > Number(i.amount)) {
+                        toast.error("أدخل مبلغ دفعة صحيحاً", {
+                          description: "يجب أن يكون المبلغ أكبر من صفر ولا يتجاوز قيمة العرض.",
+                        });
+                        return;
+                      }
+                      mutate.mutate({
+                        id: i.id,
+                        status: step.next!,
+                        requestId: i.request_id,
+                        ownerId: r?.owner_id,
+                        investorId: i.investor_id,
+                        code: r?.code ?? "",
+                        presentedInstallmentAmount: installmentAmount,
+                      });
+                    }}
+                  >
+                    {step.label}
+                  </Button>
+                </>
               )}
 
               {(i.status === "pending" || i.status === "under_review") && (

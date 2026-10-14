@@ -695,8 +695,14 @@ export async function updateProfileVerification(id: string, verification_status:
   if (error) throw error;
 }
 
-export async function updateInterest(id: string, status: string) {
+export async function updateInterest(
+  id: string,
+  status: string,
+  presentedInstallmentAmount?: number,
+) {
   const patch: TablesUpdate<"funding_interests"> = { status };
+  if (presentedInstallmentAmount !== undefined)
+    patch.presented_installment_amount = presentedInstallmentAmount;
   if (status === "commission_paid") patch.commission_paid_at = new Date().toISOString();
   const { error } = await supabase.from("funding_interests").update(patch).eq("id", id);
   if (error) throw error;

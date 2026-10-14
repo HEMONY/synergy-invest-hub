@@ -106,6 +106,7 @@ export type Database = {
           message: string
           payment_method: string
           payment_schedule: Json
+          presented_installment_amount: number | null
           proposed_works: string
           request_id: string
           scope_of_work: string
@@ -129,6 +130,7 @@ export type Database = {
           message?: string
           payment_method?: string
           payment_schedule?: Json
+          presented_installment_amount?: number | null
           proposed_works?: string
           request_id: string
           scope_of_work?: string
@@ -152,6 +154,7 @@ export type Database = {
           message?: string
           payment_method?: string
           payment_schedule?: Json
+          presented_installment_amount?: number | null
           proposed_works?: string
           request_id?: string
           scope_of_work?: string

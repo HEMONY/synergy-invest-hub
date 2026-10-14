@@ -42,6 +42,7 @@ type OfferRow = {
   duration_months: number;
   duration_days: number;
   payment_schedule: PaymentScheduleItem[];
+  presented_installment_amount: number | null;
   warranty: string;
   company_notes: string;
   commission_amount: number;
@@ -58,6 +59,12 @@ function OfferDetails({ offer }: { offer: OfferRow }) {
         <dt className="text-muted-foreground">قيمة العرض</dt>
         <dd className="font-bold text-gold">{formatSAR(Number(offer.amount))}</dd>
       </div>
+      {offer.presented_installment_amount != null && (
+        <div>
+          <dt className="text-muted-foreground">مبلغ الدفعة</dt>
+          <dd className="font-bold">{formatSAR(Number(offer.presented_installment_amount))}</dd>
+        </div>
+      )}
       <div className="sm:col-span-2 space-y-1">
         <p><span className="text-muted-foreground">نطاق العمل: </span>{offer.scope_of_work || "—"}</p>
         <p><span className="text-muted-foreground">مدة التنفيذ: </span>{formatDuration(offer.duration_months, offer.duration_days)}</p>
