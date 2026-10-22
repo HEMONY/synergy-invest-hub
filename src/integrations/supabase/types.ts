@@ -354,6 +354,9 @@ export type Database = {
           payment_number: number
           payout_status: string
           refunded_amount: number
+          receipt_path: string | null
+          remaining_sent_at: string | null
+          sent_to_company: boolean
           remaining_amount: number
           request_id: string
         }
@@ -370,6 +373,9 @@ export type Database = {
           payment_number?: number
           payout_status?: string
           refunded_amount?: number
+          receipt_path?: string | null
+          remaining_sent_at?: string | null
+          sent_to_company?: boolean
           remaining_amount?: number
           request_id: string
         }

@@ -57,6 +57,7 @@ import {
   markPaymentReleased,
   sendPaymentsToCompany,
   sendRemainingToOwner,
+  cancelMyRequest,
   refundStatusLabels,
   docTypeLabels,
   documentUrl,
@@ -873,7 +874,6 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
                 <th className="p-2">رقم الدفعة</th>
                 <th className="p-2">مبلغ الدفعة</th>
                 <th className="p-2">عمولة سينرجي</th>
-                <th className="p-2">عدد الدفعات</th>
                 <th className="p-2">مبلغ الشركة</th>
                 <th className="p-2">تاريخ الدفع</th>
                 <th className="p-2">المتبقي</th>
@@ -887,7 +887,6 @@ function ProjectPaymentsPanel({ request }: { request: PropertyRequest }) {
                   <td className="p-2 font-bold">#{p.payment_number}</td>
                   <td className="p-2">{formatSAR(Number(p.amount))}</td>
                   <td className="p-2 text-muted-foreground">{formatSAR(Number(p.commission_amount))}</td>
-                  <td className="p-2">{payments.length}</td>
                   <td className="p-2 font-semibold">{formatSAR(Number(p.company_amount))}</td>
                   <td className="p-2 text-muted-foreground">
                     {new Date(p.paid_at).toLocaleDateString("en-GB")}
@@ -1018,6 +1017,18 @@ function RequestsSection() {
     queryFn: fetchAllRequestPrivateDetails,
   });
 
+  const queryClient = useQueryClient();
+  const removeRequest = useMutation({
+    mutationFn: (id: string) => cancelMyRequest(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["my-requests"] });
+      toast.success("تم حذف الطلب");
+    },
+    onError: (e) => toast.error("تعذر حذف الطلب", { description: (e as Error).message }),
+  });
+
   if (isLoading) return <p className="text-sm text-muted-foreground">جارٍ التحميل...</p>;
   if (requests.length === 0)
     return <p className="text-sm text-muted-foreground">لا توجد طلبات بعد.</p>;
@@ -1030,15 +1041,38 @@ function RequestsSection() {
             <h3 className="truncate text-sm font-bold">
               {o.title || `${o.property_type} — ${o.city} / ${o.district}`}
             </h3>
-            <Badge className="shrink-0 bg-gold/15 text-gold">{o.code}</Badge>
+            <div className="flex shrink-0 items-center gap-2">
+              <Badge className="bg-gold/15 text-gold">{o.code}</Badge>
+              <button
+                type="button"
+                title="حذف الطلب"
+                aria-label="حذف الطلب"
+                disabled={removeRequest.isPending}
+                className="flex size-7 items-center justify-center rounded-full border border-border text-lg leading-none text-muted-foreground hover:border-destructive hover:text-destructive"
+                onClick={() => {
+                  if (window.confirm(`هل تريد حذف الطلب ${o.code} نهائياً مع عروضه ودفعاته؟ لا يمكن التراجع.`)) {
+                    removeRequest.mutate(o.id);
+                  }
+                }}
+              >
+                ×
+              </button>
+            </div>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {conditionLabels[o.condition] ?? o.condition} · {statusLabels[o.status] ?? o.status} ·{" "}
             {timeAgo(o.created_at)}
           </p>
-          <p className="mt-2 line-clamp-2 text-sm leading-7 text-muted-foreground">
-            {o.damage_description}
-          </p>
+          <dl className="mt-3 grid gap-3 rounded-xl bg-muted/60 p-3 text-xs sm:grid-cols-2">
+            <div><dt className="text-muted-foreground">نوع العقار</dt><dd className="font-bold">{o.property_type || "—"}</dd></div>
+            <div><dt className="text-muted-foreground">المساحة</dt><dd className="font-bold">{Number(o.area_sqm) > 0 ? `${o.area_sqm} م²` : "—"}</dd></div>
+            <div><dt className="text-muted-foreground">المدينة / الحي</dt><dd className="font-bold">{o.city} / {o.district}</dd></div>
+            <div><dt className="text-muted-foreground">حالة العقار</dt><dd className="font-bold">{conditionLabels[o.condition] ?? o.condition}</dd></div>
+            <div className="sm:col-span-2"><dt className="text-muted-foreground">وصف الأضرار / خطة العمل</dt><dd className="leading-6">{o.damage_description || "—"}</dd></div>
+            {o.return_notes && (
+              <div className="sm:col-span-2"><dt className="text-muted-foreground">ملاحظات العائد</dt><dd className="leading-6">{o.return_notes}</dd></div>
+            )}
+          </dl>
 
           <RequestFinancials
             request={o}
@@ -2019,13 +2053,11 @@ function PaymentsSection() {
               <th className="pb-3">المشروع</th>
               <th className="pb-3">قيمة المشروع</th>
               <th className="pb-3">العمولة</th>
-              <th className="pb-3">القسط الشهري</th>
             </tr>
           </thead>
           <tbody>
             {active.map((r) => {
               const commission = (Number(r.funding_needed || 0) * rate) / 100;
-              const months = Math.max(Number(r.duration_months || 1), 1);
               return (
                 <tr key={r.id} className="border-t border-border">
                   <td className="py-3">{r.title || r.code}</td>
@@ -2033,13 +2065,12 @@ function PaymentsSection() {
                     <FundingCell id={r.id} value={Number(r.funding_needed)} />
                   </td>
                   <td className="py-3">{commission > 0 ? formatSAR(commission) : "—"}</td>
-                  <td className="py-3">{commission > 0 ? formatSAR(commission / months) : "—"}</td>
                 </tr>
               );
             })}
             {active.length === 0 && (
               <tr>
-                <td colSpan={4} className="py-6 text-center text-muted-foreground">
+                <td colSpan={3} className="py-6 text-center text-muted-foreground">
                   لا توجد مشاريع مرتبطة بعد.
                 </td>
               </tr>

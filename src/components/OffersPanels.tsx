@@ -126,6 +126,8 @@ function OfferPaymentAndRefund({ offer, ownerId, code }: { offer: OfferRow; owne
     queryKey: ["offer-payments", offer.request_id],
     queryFn: () => fetchProjectPayments(offer.request_id),
   });
+  const lastRemaining = [...payments].reverse().find((p) => p.remaining_sent_at && Number(p.remaining_amount) > 0);
+  const remainingNow = lastRemaining ? Number(lastRemaining.remaining_amount) : 0;
 
   const pay = async () => {
     if (!receipt) {
@@ -210,6 +212,14 @@ function OfferPaymentAndRefund({ offer, ownerId, code }: { offer: OfferRow; owne
           <p>اسم صاحب الحساب: {bankakAccount.accountHolder}</p>
         </div>
         <div className="mt-3">
+          <div className="mt-3 rounded-lg border border-gold/30 p-3 text-xs">
+            <p className="font-bold">
+              {formatSAR(Number(offer.amount))} <span className="font-normal text-muted-foreground">مبلغ الدفعة</span>
+            </p>
+            {remainingNow > 0 && (
+              <p className="mt-1 font-bold text-gold">متبقي {formatSAR(remainingNow)} لاعتماد مبلغ الدفعة</p>
+            )}
+          </div>
           <Label className="text-xs">إرفاق إشعار بنكك</Label>
           <Input
             className="mt-2"
@@ -365,7 +375,7 @@ function CompanyPaymentsTable({ requestId }: { requestId: string }) {
           <tr>
             <th className="p-2">رقم الدفعة</th><th className="p-2">مبلغ الدفعة</th>
             <th className="p-2">عمولة سينرجي</th><th className="p-2">مبلغ الشركة</th>
-            <th className="p-2">تاريخ الدفع</th><th className="p-2">عدد الدفعات</th>
+            <th className="p-2">تاريخ الدفع</th>
             <th className="p-2">صرف الشركة</th>
           </tr>
         </thead>
@@ -377,7 +387,6 @@ function CompanyPaymentsTable({ requestId }: { requestId: string }) {
               <td className="p-2">{formatSAR(Number(p.commission_amount))}</td>
               <td className="p-2 font-semibold">{formatSAR(Number(p.company_amount))}</td>
               <td className="p-2">{new Date(p.paid_at).toLocaleDateString("en-GB")}</td>
-              <td className="p-2">{payments.length}</td>
               <td className="p-2">{p.payout_status === "released" ? "تم الصرف" : "بانتظار الصرف"}</td>
             </tr>
           ))}

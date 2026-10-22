@@ -9,6 +9,7 @@ import {
   Moon,
   ShieldCheck,
   Sun,
+  Tag,
   User,
   X,
 } from "lucide-react";
@@ -25,6 +26,7 @@ const links = [
   { to: "/", label: "الرئيسية", icon: Home },
   { to: "/opportunities", label: "المشاريع العقارية", icon: LineChart },
   { to: "/requests", label: "طلباتي", icon: Briefcase },
+  { to: "/offers", label: "العروض", icon: Tag },
   { to: "/notifications", label: "الإشعارات", icon: Bell },
   { to: "/account", label: "حسابي", icon: User },
 ] as const;
